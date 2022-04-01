@@ -1,0 +1,11 @@
+version: '2'
+services:
+  location_emulation:
+    container_name: location_emulation
+    image:  mibburo/location_emulation:location_emulation
+    expose:
+      - 7011
+    ports:
+      - 7011:7011
+    environment:
+      - KEY=secret

@@ -1,0 +1,18 @@
+package gr.uaegean.location.emulation.service;
+
+import gr.uaegean.location.emulation.model.LocationDTO;
+import gr.uaegean.location.emulation.model.entity.LocationData;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import static gr.uaegean.location.emulation.util.Constants.RTLS_API_URL;
+
+@Slf4j
+@Service
+public class LocationDataService {
+
+    public void sendLocationData(LocationDTO locationDto){
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.postForObject(RTLS_API_URL +"/saveLocationData", locationDto, String.class);
+    }
+}

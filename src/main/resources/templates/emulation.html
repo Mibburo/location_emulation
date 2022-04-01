@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="../static/css/custom.css" type="text/css" th:href="@{/css/custom.css}"/>
+    <link rel="stylesheet" href="../static/css/custom.css" type="text/css" th:href="@{/css/bootstrap.min.css}"/>
+    <script type="text/javascript" th:src="@{/js/jquery-3.6.0.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/custom.js}"></script>
+    <script type="text/javascript" th:src="@{/js/bootstrap.min.js}"></script>
+    <meta charset="UTF-8">
+    <title>Emulation Properties</title>
+</head>
+<body>
+<style>
+    .leftCard{
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .geofences{
+        padding-left: 5rem;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .geofences input {
+        padding: 10px 8px 10px 8px;
+        border: none;
+        border: 1px solid #343a40;
+        border-radius: 0px;
+        margin-bottom: 10px;
+        margin-top: 2px;
+        width: 35%;
+        box-sizing: border-box;
+        font-family: Roboto;
+        color: #2C3E50;
+        font-size: 14px;
+        letter-spacing: 1px
+    }
+
+    .sampleClr{
+        width: 6rem;
+        height: 2.55rem;
+        margin-top: 0.2rem;
+    }
+
+    .disabledGf{
+        color: white !important;
+    }
+
+    .leftBlock{
+        text-align: left !important;
+    }
+
+    .rightCardWrapper{
+        width: 60%;
+    }
+
+    .submitBtn{
+        background-color: #000267;
+    }
+
+    .textHeader{
+        color: #060d9f !important;
+    }
+</style>
+<div class="container-fluid">
+    <div class="row justify-content-center" >
+        <div class="col-12 col-lg-11">
+            <div class="card card0 rounded-0" >
+
+                <form method="post" action="#" enctype="multipart/form-data" th:action="@{/generateData}" th:object="${locationData}" id="locationForm">
+                <div class="row" >
+                    <div class="col-md-5 d-md-block d-none p-0 box" style="background-color: #1b1e21 !important">
+                        <div class="card rounded-0 border-0 card2" id="bill" style="background-color: #1b1e21 !important">
+                            <h3 id="heading1">Default Layout</h3>
+                            <div class="row leftCard">
+
+                                <div class="col-lg-7 col-8 mt-4 line pl-4">
+                                    <img th:src="@{images/palaemon_ship_diagram_with_geofences.png}"/>
+                                </div>
+                                <div class="rightBlock geofences ">
+                                    <label class="pay">Geofences</label>
+                                    <div class="row" th:each="gf, itemStat : *{colorCodeList}">
+
+                                        <div class="sampleClr" th:style="'background-color:'+${gf.color}"></div>
+                                        <input type="hidden" th:field="*{colorCodeList[__${itemStat.index}__].color}" >
+                                        <input type="text" class="disabledGf" th:value="${gf.color}" disabled>
+                                        <input type="text" th:field="*{colorCodeList[__${itemStat.index}__].name}">
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="col-md-7 col-sm-12 p-0 box">
+                        <div class="card rounded-0 border-0 card2" id="paypage">
+                            <div class="form-card ">
+                                <div class="rightCardWrapper">
+                                    <div class="leftBlock">
+                                        <h2 id="heading2" class="textHeader">Mapping Properties</h2>
+                                        <div class="row">
+                                            <label class="pay">Layout Image File</label>
+                                            <input type="file" accept="image/png" size="40" maxlength="52" th:field="*{imageFile}">
+                                        </div>
+                                        <div class="row">
+                                                <label class="pay">Number of data</label>
+                                                <input type="text" th:field="*{noOfData}">
+                                        </div>
+                                        <div class="row">
+                                                <label class="pay">Width in Meters</label>
+                                                <input type="text" th:field="*{realX}">
+                                        </div>
+                                        <div class="row">
+                                                <label class="pay">Position error in meters</label>
+                                                <input type="text" th:field="*{positionError}">
+                                        </div>
+                                        <div class="row">
+                                                <label class="pay">Percentage of faulty path</label>
+                                                <input type="text" th:field="*{pathErrorPrcntg}">
+                                        </div>
+                                        <div class="row">
+                                            <label class="pay">Real time emulation</label>
+                                            <select type="select" th:field="*{hasDelay}">
+                                                <option selected value="false">False</option>>
+                                                <option value="true">True</option>
+                                            </select>
+                                        </div>
+                                        <div class="row">
+                                                <label class="pay">Start time of emulation</label>
+                                                <input type="datetime-local" step=1 th:field="*{startTimestamp}">
+                                        </div>
+                                        <div class="row">
+                                            <label class="pay">End Geofence</label>
+                                            <select type="select" th:field="*{endGf}">
+                                            <option th:each="gf : ${locationData.colorCodeList}" th:value="${gf.color}" th:style="'background-color:'+${gf.color}" th:text="${gf.color}"></option></select>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 "> <input type="submit" value="Generate Data" class="btn btn-info submitBtn"> </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

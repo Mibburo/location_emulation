@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<style>
+    td{
+        padding-top: 1px;
+        padding-bottom: 1px;
+        padding-left: 1px;
+        padding-right: 1px;
+    }
+
+    table {
+        border-spacing: 0px;
+    }
+</style>
+<form method="get" action="#" th:action="@{/minDist}" th:object="${locationData}" id="adminForm">
+
+    <table>
+        <tr th:each="x : ${locationData.getGrid}">
+            <td th:each="y : ${x}"  th:style="'background-color:' +${y}">
+
+            </td>
+        </tr>
+    </table>
+    <table>
+        <tr th:each="x : ${locationData.getGrid}">
+            <td th:each="y : ${x}"  th:text="${y}">
+
+            </td>
+        </tr>
+    </table>
+    <input type="submit"> Visualization
+</form>
+</body>
+</html>
