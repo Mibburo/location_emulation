@@ -25,14 +25,18 @@ public class EmulationDTO {
     private Integer pathErrorPrcntg;
     private Integer speed;
     private MultipartFile imageFile;
-    private double scale;
+    private double deck7Scale;
+    private double deck8Scale;
+    private double deck9Scale;
     private String startTimestamp;
     private List<GeofenceColorCode> colorCodeList;
     private String[][] grid;
-    private String endGf;
+    private Map<Integer, List<String>> endGf;
     Map<String, String> geofences;
     private Boolean hasDelay;
     private Boolean isDistance;
+    private Boolean afterFirstWave;
+    private Integer deck;
 
     public void populateDefaultGeofenceColors(){
         List<GeofenceColorCode> colorCodeList = new ArrayList<>();

@@ -1,6 +1,8 @@
 package gr.uaegean.location.emulation.service;
 
 import gr.uaegean.location.emulation.model.EmulationDTO;
+import gr.uaegean.location.emulation.model.entity.LocationData;
+import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.Cacheable;
@@ -15,6 +17,7 @@ import java.io.*;
 @Slf4j
 @Component
 public class MappingService {
+
 
 
     /*public int[][] convertImageToArray() throws IOException {
@@ -40,32 +43,30 @@ public class MappingService {
     }*/
 
     @EventListener(ApplicationReadyEvent.class)
-    @Cacheable("imageMap")
-    public String[][] convertImageToColorArray() throws IOException {
+    @Cacheable("deck7Map")
+    public String[][] convertDeck7ToColorArray() {
+        InputStream in = getClass().getClassLoader().getResourceAsStream("static/images/deck7emu.png");
+        return getImageArray(in);
+    }
 
-        InputStream in = getClass().getClassLoader().getResourceAsStream("static/images/palaemon_ship_diagram_with_geofences.png");
-        BufferedImage bufferedImage = ImageIO.read(in);
+    @EventListener(ApplicationReadyEvent.class)
+    @Cacheable("deck8Map")
+    public String[][] convertDeck8ToColorArray(){
+        InputStream in = getClass().getClassLoader().getResourceAsStream("static/images/deck8emu.png");
+        return getImageArray(in);
+    }
 
-        String[][] imageArray = new String[bufferedImage.getWidth()][bufferedImage.getHeight()];
-        for (int i = 0; i < bufferedImage.getWidth(); i++) {
-            for (int j = 0; j < bufferedImage.getHeight(); j++) {
-                //int pixel = wr.getSample(i, j, 0); // the sample in the specified band for the pixel at the specified coordinate.
-                Color c = new Color(bufferedImage.getRGB(i,j));
-                int red = c.getRed();
-                int green = c.getGreen();
-                int blue = c.getBlue();
-                String hex = String.format("#%02X%02X%02X", red, green, blue);
-                imageArray[i][j] = hex;
-            }
-        }
-        log.info("cached map");
-        return imageArray;
+    @EventListener(ApplicationReadyEvent.class)
+    @Cacheable("deck9Map")
+    public String[][] convertDeck9ToColorArray(){
+        InputStream in = getClass().getClassLoader().getResourceAsStream("static/images/deck9emu.png");
+        return getImageArray(in);
     }
 
     //for visualization purposes
     public String[][] convertImageToInvertedArray(EmulationDTO dto) throws IOException {
 
-        InputStream in = getClass().getResourceAsStream("static/images/palaemon_ship_diagram_with_geofences.png");
+        InputStream in = getClass().getResourceAsStream("static/images/deck8emu.png");
 
         BufferedImage bufferedImage = ImageIO.read(in);
 
@@ -82,6 +83,34 @@ public class MappingService {
             }
         }
 
+        return imageArray;
+    }
+
+    private String[][] getImageArray(InputStream in){
+
+        BufferedImage bufferedImage = null;
+        try {
+            bufferedImage = ImageIO.read(in);
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+        String[][] imageArray = new String[bufferedImage.getWidth()][bufferedImage.getHeight()];
+        for (int i = 0; i < bufferedImage.getWidth(); i++) {
+            for (int j = 0; j < bufferedImage.getHeight(); j++) {
+                //int pixel = wr.getSample(i, j, 0); // the sample in the specified band for the pixel at the specified coordinate.
+                Color c = new Color(bufferedImage.getRGB(i,j));
+                int red = c.getRed();
+                int green = c.getGreen();
+                int blue = c.getBlue();
+                String hex = String.format("#%02X%02X%02X", red, green, blue);
+                imageArray[i][j] = hex;
+                if(!hex.equals("#000000")){
+                    Integer space = LocationDataUtils.gfSpace.get(hex) == null? 1 : LocationDataUtils.gfSpace.get(hex) + 1;
+                    LocationDataUtils.gfSpace.put(hex, space);
+                }
+            }
+        }
+        log.info("cached map");
         return imageArray;
     }
 }

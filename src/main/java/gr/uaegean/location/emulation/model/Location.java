@@ -33,12 +33,14 @@ public class Location {
     private String timestamp;
 
     @JsonIgnore
-    public void calculateCoords(Pair<Integer,Integer> coords, double scale, double error){
+    public void calculateCoords(Pair<Integer,Integer> coords, double scale, double error, Integer deckNo){
 
         double actualX = coords.getLeft() * scale;
         double actualY = coords.getRight() * scale;
 
-        setXLocation(String.valueOf(generateCoordWithError(actualX, error)));
+        Integer deckImageOffset = 0;
+        if(deckNo != 7) deckImageOffset = 90;
+        setXLocation(String.valueOf(generateCoordWithError(actualX, error) + deckImageOffset));
         setYLocation(String.valueOf(generateCoordWithError(actualY, error)));
 
         // grid coords for dev purposes

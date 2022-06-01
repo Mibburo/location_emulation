@@ -1,7 +1,6 @@
 package gr.uaegean.location.emulation.service;
 
 import gr.uaegean.location.emulation.model.*;
-import gr.uaegean.location.emulation.model.entity.LocationData;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -9,23 +8,35 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
 @Service
 public class PathingService {
 
-    @Autowired
     private LocationDataService locationDataService;
+    private LocationGenerationService locationGenerationService;
+    private LocationDataUtils locationDataUtils;
+    private MappingService mappingService;
 
-    public Integer minDistance(String[][] grid, int startX, int startY, Integer endX, Integer endY, EmulationDTO dto) throws NoSuchAlgorithmException, InvalidKeyException {
-        QItem source = new QItem(startX, startY, 0);
-        String exitVal = dto.getEndGf() == null || "".equals(dto.getEndGf()) ? LocationDataUtils.exitVal : dto.getEndGf();
+    @Autowired
+    PathingService(LocationDataService locationDataService, LocationGenerationService locationGenerationService,
+                   MappingService mappingService){
+        this.locationDataService = locationDataService;
+        this.locationGenerationService = locationGenerationService;
+        this.mappingService = mappingService;
+    }
+
+    public Integer minDistance(String[][] grid, int startX, int startY, Integer endX, Integer endY,
+                               EmulationDTO dto, Boolean isAfterFirst, Integer deckNo)
+            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 
         log.info("start BFS");
+
+        QItem source = new QItem(startX, startY, 0);
         // applying BFS on matrix cells starting from source
         Queue<QItem> queue = new LinkedList<>();
         queue.add(new QItem(source.getRow(), source.getCol(), 0));
@@ -37,7 +48,6 @@ public class PathingService {
         Deque<Pair<Integer, Integer>> route = new LinkedList<>();
         String startPoint = startX +"-"+ startY;
         while (!queue.isEmpty()) {
-
             QItem p = queue.remove();
             if("".equals(parent)){
                 parent = startPoint;
@@ -50,14 +60,16 @@ public class PathingService {
             // faulty destination, enters only when faulty destination exists
             if(endX != null && endY !=null){
                 if (p.getRow() == endX && p.getCol() == endY) {
-                    destinationFound(grid, p,  parentMap,  route,  startPoint,  parent, dto);
+                    destinationFound(grid, p,  parentMap,  route,  startPoint,  parent,
+                            dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()]);
                     log.info("end BFS");
                     return p.getDist();
                 }
             } else {
-                if (grid[p.getRow()][p.getCol()].equals(exitVal)) {
+                if (LocationDataUtils.exitVal.get(deckNo).contains(grid[p.getRow()][p.getCol()])) {
                     if(!dto.getIsDistance()){
-                        destinationFound(grid, p, parentMap, route, startPoint, parent, dto);
+                        destinationFound(grid, p, parentMap, route, startPoint, parent,
+                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()]);
                         log.info("end BFS");
                     }
                     return p.getDist();
@@ -136,7 +148,8 @@ public class PathingService {
     }
 
     //adds the traversed route to a stack by getting the parent of each node (map(node->parent)) starting from the end
-    private static Deque<Pair<Integer,Integer>> findPath(Map<String, String> nodes, String entryVal, String startPoint, Deque<Pair<Integer,Integer>> route){
+    private static Deque<Pair<Integer,Integer>> findPath(Map<String, String> nodes, String entryVal,
+                                                         String startPoint, Deque<Pair<Integer,Integer>> route){
         if(entryVal.equals(startPoint)){
             return route;
         } else {
@@ -147,163 +160,39 @@ public class PathingService {
         }
     }
 
-    private void generateLocationData(Deque<Pair<Integer,Integer>> route, String[][] grid, EmulationDTO dto) throws NoSuchAlgorithmException, InvalidKeyException {
-
-        Map<String, String> geofences = dto.getGeofences().isEmpty()? LocationDataUtils.gfMap : dto.getGeofences();
-
-        LocationData locationData = LocationDataUtils.generateLocationAddress();
-
-        LocalDateTime startTime = LocationDataUtils.stringToLDT(dto.getStartTimestamp());
-        Long activationDelay = Long.valueOf(LocationDataUtils.getRandomActivationTime());
-        log.info("delay in taking action :{}", activationDelay);
-        LocalDateTime activationTime = startTime.plusSeconds(activationDelay);
-        LocalDateTime currentTimestamp = startTime;
-
-        double dwellTime = 0;
-        Integer timeIncrement = 0;
-
-        Pair<Integer,Integer> startCoords = route.getFirst();
-        String prevIdxGf = grid[startCoords.getLeft()][startCoords.getRight()];
-
-        LocationDTO locationDto = new LocationDTO();
-        //this is a new person initially set to true
-        locationDto.setIsNewPerson(true);
-        locationDto.setLocationData(locationData);
-        //add geofence at start
-        locationData.setGeofence(populateGeofence(prevIdxGf,
-                geofences.get(prevIdxGf),
-                "ZONE_IN", locationData.getMacAddress(), locationData.getHashedMacAddress(),
-                Double.valueOf(0), currentTimestamp));
-        //emulate delay in taking action in the beginning
-        while(currentTimestamp.isBefore(activationTime)){
-
-            locationData.setLocation(populateLocation(prevIdxGf,  startCoords, dto, locationData.getHashedMacAddress(), currentTimestamp));
-            timeIncrement = LocationDataUtils.getRandomTimeIncrements();
-            dwellTime = dwellTime + timeIncrement;
-            currentTimestamp = currentTimestamp.plusSeconds(Long.valueOf(timeIncrement));
-            locationDto.setLocationData(locationData);
-            locationDataService.sendLocationData(locationDto);
-            //after first entry set new person to false
-            locationDto.setIsNewPerson(false);
-
-            //for real time run dto.hasDelay = true
-            setDelay(dto, timeIncrement);
-
-        }
-        Iterator routeIterator = route.iterator();
-
-        Integer move = 0;
-
-        while(routeIterator.hasNext()){
-            Location location = new Location();
-            //timeIncrement = LocationDataUtils.getRandomTimeIncrements();
-            Pair<Integer,Integer> coords = route.pop();
-            //location.calculateCoords(coords, dto.getScale(), dto.getPositionError());
-
-            //emulate geofence event
-            if(!prevIdxGf.equals(grid[coords.getLeft()][coords.getRight()])){
-                if(geofences.get(prevIdxGf) != null){
-                    //previous geofence exit
-                    locationData.setGeofence(populateGeofence(prevIdxGf, geofences.get(prevIdxGf),
-                            "ZONE_OUT", locationData.getMacAddress(),
-                            locationData.getHashedMacAddress(),  dwellTime, currentTimestamp));
-                    locationData.setLocation(populateLocation(grid[coords.getLeft()][coords.getRight()], coords,  dto, locationData.getHashedMacAddress(),  currentTimestamp));
-                    locationDto.setLocationData(locationData);
-
-                    locationDataService.sendLocationData(locationDto);
-                }
-
-                if(geofences.get(grid[coords.getLeft()][coords.getRight()]) != null){
-                    //new geofence enter
-                    locationData.setGeofence(populateGeofence(grid[coords.getLeft()][coords.getRight()],
-                            geofences.get(grid[coords.getLeft()][coords.getRight()]),
-                            "ZONE_IN", locationData.getMacAddress(), locationData.getHashedMacAddress(),
-                            Double.valueOf(0), currentTimestamp));
-                    locationData.setLocation(populateLocation(grid[coords.getLeft()][coords.getRight()], coords,  dto, locationData.getHashedMacAddress(),  currentTimestamp));
-                    locationDto.setLocationData(locationData);
-
-                    locationDataService.sendLocationData(locationDto);
-                }
-
-                if(locationDto.getLocationData().getGeofence().getGfName().equalsIgnoreCase("muster station")){
-                    break;
-                }
-
-                dwellTime = 0;
-            } else {
-                dwellTime = dwellTime + 0.1;
-                currentTimestamp = currentTimestamp.plusNanos(LocationDataUtils.getNanoIncrementsInRange() * 100);
-                try {
-                    if(dto.getHasDelay()){
-                        Thread.sleep(100);
-                    }
-                } catch (InterruptedException e) {
-                    log.error(e.getMessage());
-                }
-            }
-
-            //emulate location
-            if(move % dto.getSpeed() == 0 || route.size() == 0){
-                timeIncrement = LocationDataUtils.getRandomTimeIncrements();
-                currentTimestamp = currentTimestamp.plusSeconds(Long.valueOf(timeIncrement));
-                locationData.setLocation(populateLocation(grid[coords.getLeft()][coords.getRight()], coords,  dto, locationData.getHashedMacAddress(),  currentTimestamp));
-                locationDto.setLocationData(locationData);
-
-                locationDataService.sendLocationData(locationDto);
-                locationDto.setIsNewPerson(false);
-                //for real time run dto.hasDelay = true
-                setDelay(dto, timeIncrement);
-            }
-            move++;
-            prevIdxGf = grid[coords.getLeft()][coords.getRight()];
-
-        }
-
-    }
-
-    private void destinationFound(String[][] grid, QItem p, Map<String, String> parentMap, Deque<Pair<Integer, Integer>> route, String startPoint, String parent, EmulationDTO dto ) throws NoSuchAlgorithmException, InvalidKeyException {
+    private void destinationFound(String[][] grid, QItem p, Map<String, String> parentMap,
+                                  Deque<Pair<Integer, Integer>> route, String startPoint, String parent,
+                                  EmulationDTO dto, Boolean isAfterFirst, Integer deckNo, String exitGf )
+            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         Pair<Integer, Integer> pair = new ImmutablePair<Integer, Integer>(p.getRow(), p.getCol());
         route.add(pair);
         route = findPath(parentMap, parent, startPoint, route);
-        generateLocationData(route, grid, dto);
+        locationGenerationService.generateLocationData(route, grid, dto, isAfterFirst, deckNo);
+        rerunPathfindingForNextDeck(deckNo, dto, exitGf);
     }
 
-    private static Location populateLocation(String startGf, Pair<Integer, Integer> coords, EmulationDTO dto, String hashedMacAddress, LocalDateTime currentTimestamp){
-        Location location = new Location();
-        location.setGeofenceId(startGf);
-        location.setGeofenceNames(Arrays.asList(dto.getGeofences().isEmpty()? LocationDataUtils.gfMap.get(startGf) : dto.getGeofences().get(startGf)));
-        location.calculateCoords(coords, dto.getScale(), dto.getPositionError());
-        location.setTimestamp(LocationDataUtils.dateToString(currentTimestamp));
-        location.setIsAssociated("true");
-        location.setHashedMacAddress(hashedMacAddress);
-        location.setBuildingId("shipId");
-        location.setCampusId("campusId");
-        location.setFloorId("floorId");
-        location.setErrorLevel(String.valueOf(dto.getPositionError()));
-
-        return location;
-    }
-
-    private static Geofence populateGeofence(String gfId, String gfName, String gfEvent, String macAddress, String hashedMacAddress, Double dwellTime, LocalDateTime currentTimestamp){
-        Geofence geofence = new Geofence();
-
-        geofence.setGfId(gfId);
-        geofence.setGfName(gfName);
-        geofence.setGfEvent(gfEvent);
-        geofence.setMacAddress(macAddress);
-        geofence.setHashedMacAddress(hashedMacAddress);
-        geofence.setDwellTime(String.valueOf(dwellTime));
-        geofence.setTimestamp(LocationDataUtils.dateToString(currentTimestamp));
-        geofence.setIsAssociated("true");
-
-        return geofence;
-    }
-
-    private void setDelay(EmulationDTO dto, Integer timeIncrement){
-        if(dto.getHasDelay().equals(Boolean.TRUE)){
+    private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf){
+        //if running deck is not deck 7 then get the next deck and rerun pathing
+        if(deckNo != 7){
+            deckNo--;
+            String[][] deck = {};
+            switch (deckNo){
+                case 8:
+                    deck = mappingService.convertDeck8ToColorArray();
+                    break;
+                case 7:
+                    deck = mappingService.convertDeck7ToColorArray();
+                    break;
+            }
+            //get start location in new deck where exitGf (old deck) == entranceGf in new deck
+            Pair<Integer, Integer> startLocation = LocationDataUtils.getRandomStartPointInEntranceGf(deck, exitGf);
             try {
-                Thread.sleep((long) timeIncrement * 1000);
-            } catch (InterruptedException e) {
+                minDistance(deck, startLocation.getLeft(),
+                        startLocation.getRight(),
+                        null,
+                        null,
+                        dto, true, deckNo);
+            } catch (Exception e) {
                 log.error(e.getMessage());
             }
         }

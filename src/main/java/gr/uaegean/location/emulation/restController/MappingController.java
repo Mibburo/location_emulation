@@ -5,20 +5,13 @@ import gr.uaegean.location.emulation.service.MappingService;
 import gr.uaegean.location.emulation.service.PathingService;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 
 @Slf4j
 @Controller
@@ -33,31 +26,31 @@ public class MappingController{
     @Autowired
     private LocationDataUtils locationDataUtils;
 
-   /* @GetMapping("/map")
+    @GetMapping("/map")
     public ModelAndView mapImage(@ModelAttribute EmulationDTO dto) throws IOException {
 
-        dto.setGrid(mappingService.convertImageToInvertedArray(dto));
+        dto.setGrid(mappingService.convertDeck7ToColorArray());
 
         return new ModelAndView("mapVisualization", "locationData", dto);
-    }*/
+    }
 
-    @GetMapping("/emulation")
+    /*@GetMapping("/emulation")
     public ModelAndView prepareEmulation() throws IOException {
 
         EmulationDTO dto = new EmulationDTO();
         dto.populateDefaultGeofenceColors();
         dto.populateDefaultEndGeofence();
         return new ModelAndView("emulation", "locationData", dto);
-    }
+    }*/
 
-    @PostMapping("/generateData")
+    /*@PostMapping("/generateData")
     public ModelAndView generateData(@ModelAttribute EmulationDTO dto, HttpServletRequest req, ModelMap model) throws IOException {
 
-        /*int[][] grid = {  { 0, 255, 0, 255 , 255},
+        *//*int[][] grid = {  { 0, 255, 0, 255 , 255},
                             { 255, 0, 255, 255, 255 },
                             { 0, 255, 255, 255, 255 },
                             { 255 , 255, 255, 255, 255 },
-                            { 255 , 255, 255, 255, 255 }};*/
+                            { 255 , 255, 255, 255, 255 }};*//*
 
         //String[][] grid = mappingService.convertImageToColorArray(dto);
         String[][] grid = mappingService.convertImageToColorArray();
@@ -98,6 +91,6 @@ public class MappingController{
 
         }
         return new ModelAndView("emulation", "locationData", dto);
-    }
+    }*/
 
 }

@@ -1,5 +1,6 @@
 package gr.uaegean.location.emulation.util;
 
+import gr.uaegean.location.emulation.model.EmulationDTO;
 import gr.uaegean.location.emulation.model.entity.LocationData;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -25,6 +26,10 @@ public class LocationDataUtils {
 
     public final static List<String> walls = List.of("#000000", "#010000", "#000100", "#000001");
     static Random random = new Random();
+
+    public static Map<String, Integer> gfSpace = new HashMap<>();
+
+    //geofence id(hex color code) and name
     public static Map<String, String> gfMap = Stream.of(new String[][] {
             { "#0000FF", "geofence 1" },
             { "#FF00FF", "geofence 2" },
@@ -38,9 +43,38 @@ public class LocationDataUtils {
             { "#5FFFAF", "geofence 10" },
             { "#87D700", "geofence 11" },
             { "#FFAF00", "geofence 12" },
+            { "#3F48CC", "geofence 13" },
+            { "#D5B742", "geofence 14" },
+            { "#4BB5CB", "geofence 15, exit81" },
+            { "#FE52FE", "geofence 16, us81, exit91" },
+            { "#858592", "geofence 17" },
+            { "#ED1C24", "geofence 18, exit82" },
+            { "#0F1D79", "geofence 19, us82, exit92" },
+            { "#E74730", "geofence 20" },
+            { "#FFAEC9", "geofence 21" },
+            { "#22B14C", "geofence 22" },
+            { "#C8BFE7", "geofence 23" },
+            { "#7092BE", "geofence 24" },
+            { "#6952C5", "geofence 25" },
+            { "#66F7C0", "geofence 26, exit83" },
+            { "#867D3E", "geofence 27, us83, exit93" },
+            { "#2D7B15", "geofence 28, us84, exit94" },
+            { "#FF6F17", "geofence 29, exit84" },
+            { "#A6FFB1", "geofence 30" },
+            { "#E08752", "geofence 31" },
+            { "#F0F858", "geofence 32" },
+            { "#6F0266", "geofence 33" },
+            { "#529A7B", "geofence 34" },
+            { "#F8FD97", "geofence 35" },
+            { "#CADFFF", "geofence 36" },
     }).collect(Collectors.toMap(data -> data[0], data -> data[1]));
 
-    public static String exitVal = "#00AFFF";
+    //public static List<String> exitVal = List.of("#00AFFF", "#4BB5CB", "#ED1C24","#66F7C0","#FF6F17");
+
+    // exit geofences per deck number
+    public static Map<Integer, List<String>> exitVal = Map.of(7, List.of("#00AFFF"),
+            8, List.of("#4BB5CB", "#ED1C24","#66F7C0","#FF6F17"),
+            9, List.of("#FE52FE", "#0F1D79", "#867D3E", "#2D7B15") );
 
     public static LocationData generateLocationAddress() throws NoSuchAlgorithmException, InvalidKeyException {
         LocationData cl = new LocationData();
@@ -93,6 +127,15 @@ public class LocationDataUtils {
         return new ImmutablePair<>(x, y);
     }
 
+    public static Pair<Integer, Integer> getRandomStartPointInEntranceGf(String[][] grid, String gfId){
+        int x = (int) (Math.random() * (grid.length));
+        int y = (int) (Math.random() * (grid[0].length));
+        if(!grid[x][y].equals(gfId)){
+            return getRandomStartPointInEntranceGf(grid, gfId);
+        }
+        return new ImmutablePair<>(x, y);
+    }
+
     public Pair<Integer, Integer> generateFaultyEndPoint(String[][] grid){
         int x = (int) (Math.random() * (grid.length));
         int y = (int) (Math.random() * (grid[0].length));
@@ -104,6 +147,13 @@ public class LocationDataUtils {
 
     public double calculateScale(double actualWidth, int gridWidth){
         return actualWidth/gridWidth;
+    }
+
+    public static long calculateMsPerPixel(EmulationDTO dto, String gfId, Integer capacity, Integer deckNo, Double defaultSpeed){
+        Double scale = getScaleByDeck(dto, deckNo);
+        Double pixelsPerSec = calculateAdjustedSpeed(defaultSpeed, gfId, capacity, dto, deckNo)/scale;
+        Double ms = 1000/pixelsPerSec;
+        return ms.longValue();
     }
 
     public static Integer getRandomSpeed(){
@@ -133,12 +183,58 @@ public class LocationDataUtils {
         return ldt.format(formatter);
     }
 
-    public static void setExitVal(String newExitVal){
+    /*public static void setExitVal(String newExitVal){
         exitVal = newExitVal;
-    }
+    }*/
 
     public static void setGeofence(String color, String name){
         gfMap.put(color, name);
+    }
+
+    public static double calculateDefaultSpeed(){
+        return random.doubles(0.3, 1.0).findFirst().getAsDouble();
+    }
+
+    public static double calculateAdjustedSpeed(Double defaultSpeed, String gfId, Integer capacity, EmulationDTO dto, Integer deckNo){
+
+        Double adjustedSpeed = defaultSpeed;
+        Double density = calculateGfDensity(capacity, gfId, dto, deckNo);
+        if(density >= 1.9 && density < 3.2){
+            adjustedSpeed = 0.67;
+        }
+        if(density >= 3.2 && density < 3.5) {
+            adjustedSpeed = 0.2;
+        }
+        if(density >= 3.5) {
+            adjustedSpeed = 0.1;
+        }
+        adjustedSpeed = defaultSpeed<adjustedSpeed? defaultSpeed : adjustedSpeed;
+        return adjustedSpeed;
+    }
+
+    private static Double calculateGfDensity(Integer capacity, String gfId, EmulationDTO dto, Integer deckNo){
+        Integer pixelSpace = gfSpace.get(gfId);
+        Double scale = getScaleByDeck(dto, deckNo);
+
+        Double spaceM2 = pixelSpace * Math.pow(scale, 2);
+        return capacity/spaceM2;
+    }
+
+    private static Double getScaleByDeck(EmulationDTO dto, Integer deckNo){
+        Double scale = null;
+        switch (deckNo){
+            case 7:
+                scale = dto.getDeck7Scale();
+                break;
+            case 8:
+                scale = dto.getDeck8Scale();
+                break;
+            case 9:
+                scale = dto.getDeck9Scale();
+                break;
+        }
+
+        return scale;
     }
 
 }

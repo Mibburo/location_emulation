@@ -78,15 +78,15 @@
                             <div class="row leftCard">
 
                                 <div class="col-lg-7 col-8 mt-4 line pl-4">
-                                    <img th:src="@{images/palaemon_ship_diagram_with_geofences.png}"/>
+                                    <img th:src="@{images/deck7emu.png}"/>
                                 </div>
                                 <div class="rightBlock geofences ">
                                     <label class="pay">Geofences</label>
                                     <div class="row" th:each="gf, itemStat : *{colorCodeList}">
 
-                                        <div class="sampleClr" th:style="'background-color:'+${gf.color}"></div>
-                                        <input type="hidden" th:field="*{colorCodeList[__${itemStat.index}__].color}" >
-                                        <input type="text" class="disabledGf" th:value="${gf.color}" disabled>
+                                        <div class="sampleClr" th:style="'background-color:'+${gf.id}"></div>
+                                        <input type="hidden" th:field="*{colorCodeList[__${itemStat.index}__].id}" >
+                                        <input type="text" class="disabledGf" th:value="${gf.id}" disabled>
                                         <input type="text" th:field="*{colorCodeList[__${itemStat.index}__].name}">
                                     </div>
                                 </div>
@@ -135,7 +135,7 @@
                                         <div class="row">
                                             <label class="pay">End Geofence</label>
                                             <select type="select" th:field="*{endGf}">
-                                            <option th:each="gf : ${locationData.colorCodeList}" th:value="${gf.color}" th:style="'background-color:'+${gf.color}" th:text="${gf.color}"></option></select>
+                                            <option th:each="gf : ${locationData.colorCodeList}" th:value="${gf.id}" th:style="'background-color:'+${gf.id}" th:text="${gf.id}"></option></select>
                                         </div>
                                     </div>
 
