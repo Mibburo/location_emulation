@@ -8,7 +8,6 @@ import gr.uaegean.location.emulation.service.MappingService;
 import gr.uaegean.location.emulation.service.PathingService;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
@@ -46,63 +45,51 @@ public class LocationDataController {
 
     @PostMapping("/getGeofence")
     public GeofenceColorCode getGeofence(@RequestBody LocationServiceDTO locationServiceDTO) throws IOException {
-        String[][] grid = mappingService.convertDeck7ToColorArray();
+        EmulationDTO dto = getGridAndWidth(locationServiceDTO);
+        double scale = locationDataUtils.calculateScale(dto.getRealX(), dto.getGrid().length);
+        Double xCoord = getCorrectXCoord(locationServiceDTO.getXCoord(), Integer.valueOf(locationServiceDTO.getDeck()));
+        Double yCoord = getCorrectYCoord(locationServiceDTO.getYCoord(), Integer.valueOf(locationServiceDTO.getDeck()));
 
-        Double gridX = Double.parseDouble(locationServiceDTO.getXCoord()) / locationDataUtils.calculateScale(150, grid.length);
-        Double gridY = Double.parseDouble(locationServiceDTO.getYCoord()) / locationDataUtils.calculateScale(150, grid.length);
-
-        GeofenceColorCode geofence = new GeofenceColorCode(grid[gridX.intValue()][gridY.intValue()], LocationDataUtils.gfMap.get(grid[gridX.intValue()][gridY.intValue()]));
+        Double gridX = xCoord / scale;
+        Double gridY = yCoord / scale;
+        GeofenceColorCode geofence = new GeofenceColorCode(dto.getGrid()[gridX.intValue()][gridY.intValue()],
+                LocationDataUtils.gfMap.get(dto.getGrid()[gridX.intValue()][gridY.intValue()]));
 
         return geofence;
     }
 
     @PostMapping("/getDistance")
-    public String getDistance(@RequestBody LocationServiceDTO locationServiceDTO) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public String getDistance(@RequestBody LocationServiceDTO locationServiceDTO) throws IOException,
+            NoSuchAlgorithmException, InvalidKeyException {
 
-        String[][] deck7 = mappingService.convertDeck7ToColorArray();
-        String[][] deck8 = mappingService.convertDeck8ToColorArray();
-        String[][] deck9 = mappingService.convertDeck9ToColorArray();
-        String[][] grid = null;
-        Integer actualWidth = 155;
+        EmulationDTO dto = getGridAndWidth(locationServiceDTO);
+        Double xCoord = getCorrectXCoord(locationServiceDTO.getXCoord(), Integer.valueOf(locationServiceDTO.getDeck()));
+        Double xCoord2 = locationServiceDTO.getXCoord2() != null?
+                getCorrectXCoord(locationServiceDTO.getXCoord(), Integer.valueOf(locationServiceDTO.getDeck())): null;
 
-        switch (locationServiceDTO.getDeck()) {
-            case "7":
-                grid = deck7;
-                actualWidth = 155;
-                break;
-            case "8":
-                grid = deck8;
-                actualWidth = 60;
-                break;
-            case "9":
-                grid = deck9;
-                actualWidth = 60;
-                break;
-        }
-        double scale = locationDataUtils.calculateScale(actualWidth, grid.length);
-        Double gridX = Double.parseDouble(locationServiceDTO.getXCoord()) / scale;
-        Double gridY = Double.parseDouble(locationServiceDTO.getYCoord()) / scale;
+        Double yCoord = getCorrectYCoord(locationServiceDTO.getYCoord(), Integer.valueOf(locationServiceDTO.getDeck()));
+        Double yCoord2 = locationServiceDTO.getYCoord2() != null?
+                getCorrectXCoord(locationServiceDTO.getXCoord(), Integer.valueOf(locationServiceDTO.getDeck())): null;
+        double scale = locationDataUtils.calculateScale(dto.getRealX(), dto.getGrid().length);
+        Double gridX = xCoord / scale;
+        Double gridY = yCoord / scale;
 
-        Double gridX2 = locationServiceDTO.getXCoord2() != null? Double.parseDouble(locationServiceDTO.getXCoord2()) / scale : 0;
-        Double gridY2 = locationServiceDTO.getYCoord2() != null? Double.parseDouble(locationServiceDTO.getYCoord2()) / scale : 0;
+        Double gridX2 = locationServiceDTO.getXCoord2() != null? xCoord2 / scale : 0;
+        Double gridY2 = locationServiceDTO.getYCoord2() != null? yCoord2 / scale : 0;
 
-        Pair<Integer, Integer> startLocation = new ImmutablePair<>(gridX.intValue(), gridY.intValue());
-        EmulationDTO dto = new EmulationDTO();
-        //dto.setEndGf(locationServiceDTO.getMusterStationId());
         dto.setIsDistance(true);
 
         Integer distance = 0;
         if(locationServiceDTO.getXCoord2() != null && locationServiceDTO.getYCoord2() != null){
             log.info("start Location x :{}, y :{} , end location x :{}, y :{}", gridX.intValue(), gridY.intValue(),
                     gridX2.intValue(), gridY2.intValue());
-            distance = pathingService.minDistance(grid, gridX.intValue(),
+            distance = pathingService.minDistance(dto.getGrid(), gridX.intValue(),
                     gridY.intValue(),
                     gridX2.intValue(),
                     gridY2.intValue(),
                     dto, false, Integer.valueOf(locationServiceDTO.getDeck()));
         } else {
-            distance = pathingService.minDistance(grid, startLocation.getLeft(),
-                    startLocation.getRight(),
+            distance = pathingService.minDistance(dto.getGrid(), gridX.intValue(), gridY.intValue(),
                     null,
                     null,
                     dto, false, Integer.valueOf(locationServiceDTO.getDeck()));
@@ -228,4 +215,39 @@ public class LocationDataController {
 
         }
     }
+
+    private EmulationDTO getGridAndWidth(LocationServiceDTO locationServiceDTO){
+        EmulationDTO emulationDTO = new EmulationDTO();
+        String[][] deck7 = mappingService.convertDeck7ToColorArray();
+        String[][] deck8 = mappingService.convertDeck8ToColorArray();
+        String[][] deck9 = mappingService.convertDeck9ToColorArray();
+        switch (locationServiceDTO.getDeck()) {
+            case "7":
+                emulationDTO.setGrid(deck7);
+                emulationDTO.setRealX(LocationDataUtils.widthsPerDeck.get(7));
+                break;
+            case "8":
+                emulationDTO.setGrid(deck8);
+                emulationDTO.setRealX(LocationDataUtils.widthsPerDeck.get(8));
+                break;
+            case "9":
+                emulationDTO.setGrid(deck9);
+                emulationDTO.setRealX(LocationDataUtils.widthsPerDeck.get(9));
+                break;
+        }
+        return emulationDTO;
+    }
+
+    //if given x coordinate are bigger than the max then return the max x coordinate
+    private Double getCorrectXCoord(String xCoord, Integer deckNo){
+        Double deckOffset = deckNo != 7? 90D : 0;
+        Double xCoordDbl = Double.parseDouble(xCoord) - deckOffset;
+        return xCoordDbl > LocationDataUtils.widthsPerDeck.get(deckNo)? LocationDataUtils.widthsPerDeck.get(deckNo) - 0.2: xCoordDbl;
+    }
+    //if given y coordinate are bigger than the max then return the max y coordinate
+    private Double getCorrectYCoord(String yCoord, Integer deckNo){
+        Double yCoordDbl = Double.parseDouble(yCoord);
+        return yCoordDbl > LocationDataUtils.heightsPerDeck.get(deckNo)? LocationDataUtils.heightsPerDeck.get(deckNo) - 0.2 : yCoordDbl;
+    }
+
 }

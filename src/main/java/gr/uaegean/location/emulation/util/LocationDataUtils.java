@@ -69,6 +69,13 @@ public class LocationDataUtils {
             { "#CADFFF", "geofence 36" },
     }).collect(Collectors.toMap(data -> data[0], data -> data[1]));
 
+    public static Map<Integer, Double> widthsPerDeck = Map.of(7, 155D,
+            8, 60D,
+            9, 60D );
+
+    public static Map<Integer, Double> heightsPerDeck = Map.of(7, 34.1D,
+            8, 35.8D,
+            9, 33D );
     //public static List<String> exitVal = List.of("#00AFFF", "#4BB5CB", "#ED1C24","#66F7C0","#FF6F17");
 
     // exit geofences per deck number
