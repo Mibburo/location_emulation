@@ -60,9 +60,11 @@ public class PathingService {
             // faulty destination, enters only when faulty destination exists
             if(endX != null && endY !=null){
                 if (p.getRow() == endX && p.getCol() == endY) {
-                    destinationFound(grid, p,  parentMap,  route,  startPoint,  parent,
-                            dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()]);
-                    log.info("end BFS");
+                    if(!dto.getIsDistance()) {
+                        destinationFound(grid, p, parentMap, route, startPoint, parent,
+                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()]);
+                        log.info("end BFS");
+                    }
                     return p.getDist();
                 }
             } else {

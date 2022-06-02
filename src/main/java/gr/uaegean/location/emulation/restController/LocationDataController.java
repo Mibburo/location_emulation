@@ -8,12 +8,15 @@ import gr.uaegean.location.emulation.service.MappingService;
 import gr.uaegean.location.emulation.service.PathingService;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -53,21 +56,60 @@ public class LocationDataController {
         return geofence;
     }
 
-    /*@PostMapping("/getDistance")
+    @PostMapping("/getDistance")
     public String getDistance(@RequestBody LocationServiceDTO locationServiceDTO) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        String[][] grid = mappingService.convertDeck7ToColorArray();
 
-        Double gridX = Double.parseDouble(locationServiceDTO.getXCoord()) / locationDataUtils.calculateScale(120, grid.length);
-        Double gridY = Double.parseDouble(locationServiceDTO.getYCoord()) / locationDataUtils.calculateScale(120, grid.length);
+        String[][] deck7 = mappingService.convertDeck7ToColorArray();
+        String[][] deck8 = mappingService.convertDeck8ToColorArray();
+        String[][] deck9 = mappingService.convertDeck9ToColorArray();
+        String[][] grid = null;
+        Integer actualWidth = 155;
+
+        switch (locationServiceDTO.getDeck()) {
+            case "7":
+                grid = deck7;
+                actualWidth = 155;
+                break;
+            case "8":
+                grid = deck8;
+                actualWidth = 60;
+                break;
+            case "9":
+                grid = deck9;
+                actualWidth = 60;
+                break;
+        }
+        double scale = locationDataUtils.calculateScale(actualWidth, grid.length);
+        Double gridX = Double.parseDouble(locationServiceDTO.getXCoord()) / scale;
+        Double gridY = Double.parseDouble(locationServiceDTO.getYCoord()) / scale;
+
+        Double gridX2 = locationServiceDTO.getXCoord2() != null? Double.parseDouble(locationServiceDTO.getXCoord2()) / scale : 0;
+        Double gridY2 = locationServiceDTO.getYCoord2() != null? Double.parseDouble(locationServiceDTO.getYCoord2()) / scale : 0;
 
         Pair<Integer, Integer> startLocation = new ImmutablePair<>(gridX.intValue(), gridY.intValue());
         EmulationDTO dto = new EmulationDTO();
-        dto.setEndGf(locationServiceDTO.getMusterStationId());
+        //dto.setEndGf(locationServiceDTO.getMusterStationId());
         dto.setIsDistance(true);
 
-        return String.valueOf(pathingService.minDistance(grid, startLocation.getLeft(), startLocation.getRight(), null, null, dto, false, 7)
-                * locationDataUtils.calculateScale(66, grid.length));
-    }*/
+        Integer distance = 0;
+        if(locationServiceDTO.getXCoord2() != null && locationServiceDTO.getYCoord2() != null){
+            log.info("start Location x :{}, y :{} , end location x :{}, y :{}", gridX.intValue(), gridY.intValue(),
+                    gridX2.intValue(), gridY2.intValue());
+            distance = pathingService.minDistance(grid, gridX.intValue(),
+                    gridY.intValue(),
+                    gridX2.intValue(),
+                    gridY2.intValue(),
+                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()));
+        } else {
+            distance = pathingService.minDistance(grid, startLocation.getLeft(),
+                    startLocation.getRight(),
+                    null,
+                    null,
+                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()));
+        }
+
+        return String.valueOf(distance * scale);
+    }
 
     @PostMapping("/getPassengerSpeed")
     public String getPassengerSpeed(@RequestBody List<LocationServiceDTO> dto) {
