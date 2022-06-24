@@ -11,12 +11,18 @@ import java.util.Map;
 @Getter
 @Setter
 @NoArgsConstructor
-public class GeofenceColorCode {
+public class GeofenceAttributes {
 
     private String id;
     private String name;
+    private Integer capacity;
+    private Integer xStart;
+    private Integer xEnd;
+    private Integer yStart;
+    private Integer yEnd;
+    private Integer space;
 
-    public GeofenceColorCode(String id, String name){
+    public GeofenceAttributes(String id, String name){
         this.id=id;
         this.name=name;
     }

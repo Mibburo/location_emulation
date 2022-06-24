@@ -29,7 +29,7 @@ public class MappingController{
     @GetMapping("/map")
     public ModelAndView mapImage(@ModelAttribute EmulationDTO dto) throws IOException {
 
-        dto.setGrid(mappingService.convertDeck7ToColorArray());
+        dto.setGrid(mappingService.convertDeck8ToColorArray());
 
         return new ModelAndView("mapVisualization", "locationData", dto);
     }

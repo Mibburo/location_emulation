@@ -62,7 +62,7 @@ public class PathingService {
                 if (p.getRow() == endX && p.getCol() == endY) {
                     if(!dto.getIsDistance()) {
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
-                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()]);
+                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()], true);
                         log.info("end BFS");
                     }
                     return p.getDist();
@@ -71,7 +71,7 @@ public class PathingService {
                 if (LocationDataUtils.exitVal.get(deckNo).contains(grid[p.getRow()][p.getCol()])) {
                     if(!dto.getIsDistance()){
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
-                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()]);
+                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()], false);
                         log.info("end BFS");
                     }
                     return p.getDist();
@@ -164,13 +164,14 @@ public class PathingService {
 
     private void destinationFound(String[][] grid, QItem p, Map<String, String> parentMap,
                                   Deque<Pair<Integer, Integer>> route, String startPoint, String parent,
-                                  EmulationDTO dto, Boolean isAfterFirst, Integer deckNo, String exitGf )
+                                  EmulationDTO dto, Boolean isAfterFirst, Integer deckNo, String exitGf,
+                                  Boolean isFaultyDest )
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         Pair<Integer, Integer> pair = new ImmutablePair<Integer, Integer>(p.getRow(), p.getCol());
         route.add(pair);
         route = findPath(parentMap, parent, startPoint, route);
         locationGenerationService.generateLocationData(route, grid, dto, isAfterFirst, deckNo);
-        rerunPathfindingForNextDeck(deckNo, dto, exitGf);
+        if(!isFaultyDest) rerunPathfindingForNextDeck(deckNo, dto, exitGf);
     }
 
     private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf){

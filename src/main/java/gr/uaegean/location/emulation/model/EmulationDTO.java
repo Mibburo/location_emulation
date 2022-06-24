@@ -7,7 +7,6 @@ import lombok.Setter;
 import lombok.ToString;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +28,7 @@ public class EmulationDTO {
     private double deck8Scale;
     private double deck9Scale;
     private String startTimestamp;
-    private List<GeofenceColorCode> colorCodeList;
+    private List<GeofenceAttributes> colorCodeList;
     private String[][] grid;
     private Map<Integer, List<String>> endGf;
     Map<String, String> geofences;
@@ -39,8 +38,8 @@ public class EmulationDTO {
     private Integer deck;
 
     public void populateDefaultGeofenceColors(){
-        List<GeofenceColorCode> colorCodeList = new ArrayList<>();
-        LocationDataUtils.gfMap.forEach((k,v) -> colorCodeList.add(new GeofenceColorCode(k,v)));
+        List<GeofenceAttributes> colorCodeList = new ArrayList<>();
+        LocationDataUtils.gfMap.forEach((k,v) -> colorCodeList.add(new GeofenceAttributes(k,v)));
         setColorCodeList(colorCodeList);
     }
 
@@ -50,7 +49,7 @@ public class EmulationDTO {
 
     public void populateNewGeofenceMap(){
         Map<String, String> gfs = new HashMap<>();
-        for (GeofenceColorCode gf : getColorCodeList()) {
+        for (GeofenceAttributes gf : getColorCodeList()) {
             gfs.put(gf.getId(), gf.getName());
         }
 

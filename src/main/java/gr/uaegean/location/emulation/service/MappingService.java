@@ -1,7 +1,7 @@
 package gr.uaegean.location.emulation.service;
 
 import gr.uaegean.location.emulation.model.EmulationDTO;
-import gr.uaegean.location.emulation.model.entity.LocationData;
+import gr.uaegean.location.emulation.model.GeofenceAttributes;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -106,7 +106,27 @@ public class MappingService {
                 imageArray[i][j] = hex;
                 if(!hex.equals("#000000")){
                     Integer space = LocationDataUtils.gfSpace.get(hex) == null? 1 : LocationDataUtils.gfSpace.get(hex) + 1;
+                    if(space == 1) {
+                        //log.info("bbbbbbbbbbbbbbbbbbb gfAttr :{}", LocationDataUtils.gfAttr);
+                        GeofenceAttributes gfAttributes = new GeofenceAttributes();
+                        gfAttributes.setId(hex);
+                        gfAttributes.setName(LocationDataUtils.gfMap.get(hex));
+                        gfAttributes.setXStart(i);
+                        gfAttributes.setYStart(j);
+                        LocationDataUtils.gfAttr.put(hex, gfAttributes);
+                    }
                     LocationDataUtils.gfSpace.put(hex, space);
+                }
+                if(i-1 >0 && j-1 >0 && !imageArray[i-1][j-1].equalsIgnoreCase(hex)
+                        && LocationDataUtils.gfAttr.get(imageArray[i-1][j-1]) != null
+                        && !imageArray[i-1][j-1].equalsIgnoreCase("#000000")){
+                    GeofenceAttributes gfAttributes = LocationDataUtils.gfAttr.get(imageArray[i-1][j-1]);
+                    //log.info("bbbbbbbbbbbbbbbbbbb gfAttr :{}", gfAttributes);
+
+                    gfAttributes.setXEnd(i-1);
+                    gfAttributes.setYEnd(j-1);
+                    gfAttributes.setSpace(LocationDataUtils.gfSpace.get(imageArray[i-1][j-1]));
+                    LocationDataUtils.gfAttr.put(imageArray[i-1][j-1], gfAttributes);
                 }
             }
         }

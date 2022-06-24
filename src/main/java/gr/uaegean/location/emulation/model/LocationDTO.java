@@ -1,6 +1,6 @@
 package gr.uaegean.location.emulation.model;
 
-import gr.uaegean.location.emulation.model.entity.LocationData;
+import gr.uaegean.location.emulation.model.entity.LocationTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,6 +12,6 @@ import lombok.ToString;
 @NoArgsConstructor
 public class LocationDTO {
 
-    private LocationData locationData;
+    private LocationTO locationTO;
     private Boolean isNewPerson;
 }

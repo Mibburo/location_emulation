@@ -1,7 +1,7 @@
 package gr.uaegean.location.emulation.restController;
 
 import gr.uaegean.location.emulation.model.EmulationDTO;
-import gr.uaegean.location.emulation.model.GeofenceColorCode;
+import gr.uaegean.location.emulation.model.GeofenceAttributes;
 import gr.uaegean.location.emulation.model.LocationServiceDTO;
 import gr.uaegean.location.emulation.service.LocationGenerationService;
 import gr.uaegean.location.emulation.service.MappingService;
@@ -44,7 +44,7 @@ public class LocationDataController {
     }
 
     @PostMapping("/getGeofence")
-    public GeofenceColorCode getGeofence(@RequestBody LocationServiceDTO locationServiceDTO) throws IOException {
+    public GeofenceAttributes getGeofence(@RequestBody LocationServiceDTO locationServiceDTO) throws IOException {
         EmulationDTO dto = getGridAndWidth(locationServiceDTO);
         double scale = locationDataUtils.calculateScale(dto.getRealX(), dto.getGrid().length);
         Double xCoord = getCorrectXCoord(locationServiceDTO.getXCoord(), Integer.valueOf(locationServiceDTO.getDeck()));
@@ -52,7 +52,7 @@ public class LocationDataController {
 
         Double gridX = xCoord / scale;
         Double gridY = yCoord / scale;
-        GeofenceColorCode geofence = new GeofenceColorCode(dto.getGrid()[gridX.intValue()][gridY.intValue()],
+        GeofenceAttributes geofence = new GeofenceAttributes(dto.getGrid()[gridX.intValue()][gridY.intValue()],
                 LocationDataUtils.gfMap.get(dto.getGrid()[gridX.intValue()][gridY.intValue()]));
 
         return geofence;
@@ -127,11 +127,30 @@ public class LocationDataController {
         return null;
     }
 
-    @GetMapping("/getGfCapacity")
+   /* @GetMapping("/getGfCapacity")
     public String getGfCapacity(@RequestParam("gfId") @Nullable String gfId){
         Map<String, Integer> gfCapacity = locationGenerationService.gfCapacity;
         if(gfId != null && !"".equals(gfId)) return String.valueOf(gfCapacity.get(gfId));
         return gfCapacity.toString();
+    }*/
+
+    @GetMapping("/getGfCapacity")
+    public List<GeofenceAttributes> getGfCapacity(@RequestParam("gfId") @Nullable String gfId){
+        Map<String, Integer> gfCapacity = locationGenerationService.gfCapacity;
+        Map<String, GeofenceAttributes> gfAttributesMap = LocationDataUtils.gfAttr;
+
+        List<GeofenceAttributes> gfAttrList = new ArrayList<>();
+        if(gfId != null && !"".equals(gfId)) {
+            GeofenceAttributes singleGf = gfAttributesMap.get(gfId);
+            singleGf.setCapacity(gfCapacity.get(gfId));
+            gfAttrList.add(singleGf);
+        } else {
+            gfAttributesMap.forEach((k, v) -> {
+                v.setCapacity(gfCapacity.get(k) == null ? 0 : gfCapacity.get(k));
+                gfAttrList.add(v);
+            });
+        }
+        return gfAttrList;
     }
 
     @GetMapping("/getGfSpace")
@@ -179,7 +198,7 @@ public class LocationDataController {
             Integer deckNo = 7;
 
             //set random deck as start
-            deckNo = random.ints(7, 10).findFirst().getAsInt();
+            //deckNo = random.ints(7, 10).findFirst().getAsInt();
             grid = decks.get(deckNo);
 
             dto.setSpeed(locationDataUtils.getRandomSpeed());
@@ -208,9 +227,17 @@ public class LocationDataController {
                                 null,
                                 dto, isAfterFirst.get(), finalDeckNo);
                     }
-                } catch (Exception e) {
+                } catch (NoSuchAlgorithmException e) {
                     log.error(e.getMessage());
+                    e.printStackTrace();
+                } catch (InvalidKeyException e) {
+                    log.error(e.getMessage());
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    log.error(e.getMessage());
+                    e.printStackTrace();
                 }
+
             }).start();
 
         }

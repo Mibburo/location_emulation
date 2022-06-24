@@ -1,10 +1,7 @@
 package gr.uaegean.location.emulation.service;
 
-import gr.uaegean.location.emulation.model.EmulationDTO;
-import gr.uaegean.location.emulation.model.Geofence;
-import gr.uaegean.location.emulation.model.Location;
-import gr.uaegean.location.emulation.model.LocationDTO;
-import gr.uaegean.location.emulation.model.entity.LocationData;
+import gr.uaegean.location.emulation.model.*;
+import gr.uaegean.location.emulation.model.entity.LocationTO;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -38,7 +35,7 @@ public class LocationGenerationService {
 
         Map<String, String> geofences = dto.getGeofences().isEmpty()? LocationDataUtils.gfMap : dto.getGeofences();
 
-        LocationData locationData = LocationDataUtils.generateLocationAddress();
+        LocationTO locationData = LocationDataUtils.generateLocationAddress();
         LocalDateTime previousPostTime = LocalDateTime.now();
 
         double dwellTime = 0;
@@ -51,12 +48,12 @@ public class LocationGenerationService {
         LocationDTO locationDto = new LocationDTO();
         //this is a new person initially set to true
 
-        locationDto.setLocationData(locationData);
+        locationDto.setLocationTO(locationData);
         //add geofence at start
         locationData.setGeofence(populateGeofence(prevIdxGf,
                 geofences.get(prevIdxGf),
                 "ZONE_IN", locationData.getMacAddress(), locationData.getHashedMacAddress(),
-                Double.valueOf(0), LocalDateTime.now()));
+                Double.valueOf(0), LocalDateTime.now(), deckNo));
         gfCapIncrease(prevIdxGf);
         //emulate delay in taking action in the beginning
         if(!isAfterFirst){
@@ -69,7 +66,7 @@ public class LocationGenerationService {
                 locationData.setLocation(populateLocation(prevIdxGf,  startCoords, dto,
                         locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
                 dwellTime = dwellTime + timeIncrement;
-                locationDto.setLocationData(locationData);
+                locationDto.setLocationTO(locationData);
                 locationDataService.sendLocationData(locationDto);
                 //after first entry set new person to false
                 locationDto.setIsNewPerson(false);
@@ -93,10 +90,10 @@ public class LocationGenerationService {
                     gfCapDecrease(prevIdxGf);
                     locationData.setGeofence(populateGeofence(prevIdxGf, geofences.get(prevIdxGf),
                             "ZONE_OUT", locationData.getMacAddress(),
-                            locationData.getHashedMacAddress(),  dwellTime, LocalDateTime.now()));
+                            locationData.getHashedMacAddress(),  dwellTime, LocalDateTime.now(), deckNo));
                     locationData.setLocation(populateLocation(currentGf, coords,  dto,
                             locationData.getHashedMacAddress(),  LocalDateTime.now(), deckNo));
-                    locationDto.setLocationData(locationData);
+                    locationDto.setLocationTO(locationData);
                     locationDataService.sendLocationData(locationDto);
                 }
 
@@ -106,14 +103,14 @@ public class LocationGenerationService {
                     locationData.setGeofence(populateGeofence(currentGf,
                             geofences.get(grid[coords.getLeft()][coords.getRight()]),
                             "ZONE_IN", locationData.getMacAddress(), locationData.getHashedMacAddress(),
-                            Double.valueOf(0), LocalDateTime.now()));
+                            Double.valueOf(0), LocalDateTime.now(), deckNo));
                     locationData.setLocation(populateLocation(currentGf, coords,  dto,
                             locationData.getHashedMacAddress(),  LocalDateTime.now(), deckNo));
-                    locationDto.setLocationData(locationData);
+                    locationDto.setLocationTO(locationData);
                     locationDataService.sendLocationData(locationDto);
                 }
 
-                if(locationDto.getLocationData().getGeofence().getGfName().equalsIgnoreCase("muster station")){
+                if(locationDto.getLocationTO().getGeofence().getGfName().equalsIgnoreCase("muster station")){
                     break;
                 }
 
@@ -136,7 +133,7 @@ public class LocationGenerationService {
                 previousPostTime = LocalDateTime.now();
                 locationData.setLocation(populateLocation(currentGf, coords,  dto,
                         locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
-                locationDto.setLocationData(locationData);
+                locationDto.setLocationTO(locationData);
                 locationDataService.sendLocationData(locationDto);
                 locationDto.setIsNewPerson(false);
                 if(route.size() == 0 && deckNo != 7){
@@ -149,7 +146,7 @@ public class LocationGenerationService {
 
     }
 
-    private static Location populateLocation(String startGf, Pair<Integer, Integer> coords, EmulationDTO dto,
+    private static UserLocationUnit populateLocation(String startGf, Pair<Integer, Integer> coords, EmulationDTO dto,
                                              String hashedMacAddress, LocalDateTime currentTimestamp,
                                              Integer deckNo){
         Double scale = dto.getDeck7Scale();
@@ -161,7 +158,7 @@ public class LocationGenerationService {
                 scale = dto.getDeck9Scale();
                 break;
         }
-        Location location = new Location();
+        UserLocationUnit location = new UserLocationUnit();
         location.setGeofenceId(startGf);
         location.setGeofenceNames(Arrays.asList(dto.getGeofences().isEmpty()?
                 LocationDataUtils.gfMap.get(startGf) : dto.getGeofences().get(startGf)));
@@ -172,15 +169,17 @@ public class LocationGenerationService {
         location.setBuildingId("shipId");
         location.setCampusId("campusId");
         location.setFloorId(String.valueOf(deckNo));
+//        location.setDeck(String.valueOf(deckNo));
         location.setErrorLevel(String.valueOf(dto.getPositionError()));
 
         return location;
     }
 
-    private static Geofence populateGeofence(String gfId, String gfName, String gfEvent,
-                                             String macAddress, String hashedMacAddress,
-                                             Double dwellTime, LocalDateTime currentTimestamp){
-        Geofence geofence = new Geofence();
+    private static UserGeofenceUnit populateGeofence(String gfId, String gfName, String gfEvent,
+                                                     String macAddress, String hashedMacAddress,
+                                                     Double dwellTime, LocalDateTime currentTimestamp,
+                                                     Integer deckNo){
+        UserGeofenceUnit geofence = new UserGeofenceUnit();
 
         geofence.setGfId(gfId);
         geofence.setGfName(gfName);
@@ -190,6 +189,7 @@ public class LocationGenerationService {
         geofence.setDwellTime(String.valueOf(dwellTime));
         geofence.setTimestamp(LocationDataUtils.dateToString(currentTimestamp));
         geofence.setIsAssociated("true");
+        geofence.setDeck(String.valueOf(deckNo));
 
         return geofence;
     }

@@ -12,6 +12,7 @@ public class LocationDataService {
 
     public void sendLocationData(LocationDTO locationDto){
         RestTemplate restTemplate = new RestTemplate();
+        log.info("1111111111111111 location dto :{}", locationDto);
         restTemplate.postForObject(RTLS_API_URL +"/saveLocationData", locationDto, String.class);
     }
 }

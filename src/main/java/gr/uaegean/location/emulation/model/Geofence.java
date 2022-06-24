@@ -20,5 +20,6 @@ public class Geofence {
     private String dwellTime;
     private String hashedMacAddress;
     private String timestamp;
+    private String deck;
 
 }
