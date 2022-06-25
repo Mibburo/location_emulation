@@ -65,9 +65,11 @@ public class LocationGenerationService {
 
                 locationData.setLocation(populateLocation(prevIdxGf,  startCoords, dto,
                         locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
+
                 dwellTime = dwellTime + timeIncrement;
                 locationDto.setLocationTO(locationData);
                 locationDataService.sendLocationData(locationDto);
+                locationData.setGeofence(new UserGeofenceUnit());
                 //after first entry set new person to false
                 locationDto.setIsNewPerson(false);
 
@@ -76,13 +78,11 @@ public class LocationGenerationService {
             }
         }
         Iterator routeIterator = route.iterator();
-
         while(routeIterator.hasNext()){
 
             //Location location = new Location();
             Pair<Integer,Integer> coords = route.pop();
             String currentGf = grid[coords.getLeft()][coords.getRight()];
-
             //emulate geofence event
             if(!prevIdxGf.equals(currentGf)){
                 if(geofences.get(prevIdxGf) != null){
@@ -134,6 +134,7 @@ public class LocationGenerationService {
                 locationData.setLocation(populateLocation(currentGf, coords,  dto,
                         locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
                 locationDto.setLocationTO(locationData);
+                locationData.setGeofence(new UserGeofenceUnit());
                 locationDataService.sendLocationData(locationDto);
                 locationDto.setIsNewPerson(false);
                 if(route.size() == 0 && deckNo != 7){

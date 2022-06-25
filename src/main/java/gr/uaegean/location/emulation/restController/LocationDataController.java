@@ -198,7 +198,7 @@ public class LocationDataController {
             Integer deckNo = 7;
 
             //set random deck as start
-            //deckNo = random.ints(7, 10).findFirst().getAsInt();
+            deckNo = random.ints(7, 10).findFirst().getAsInt();
             grid = decks.get(deckNo);
 
             dto.setSpeed(locationDataUtils.getRandomSpeed());

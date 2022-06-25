@@ -185,8 +185,6 @@ public class LocationDataUtils {
     }
 
     public static Pair<Integer, Integer> getRandomStartPointInEntranceGf(String[][] grid, String gfId){
-        log.info("111111111111111111111111 exit :{}", gfId);
-        log.info("222222222222222222222222 entrance :{}", gfEntry.get(gfId));
         GeofenceAttributes gfAttributes = gfAttr.get(gfEntry.get(gfId));
         int x = random.nextInt(gfAttributes.getXEnd()-gfAttributes.getXStart()) + gfAttributes.getXStart();
         //int x = (int) (Math.random() * (grid.length) - 1) ;
@@ -234,7 +232,7 @@ public class LocationDataUtils {
 
     public static Integer getRandomActivationTime(){
         //Random random = new Random();
-        return random.ints(0, 180).findFirst().getAsInt();
+        return random.ints(0, 120).findFirst().getAsInt();
     }
 
     public static LocalDateTime stringToLDT(String dateS) {
@@ -270,6 +268,7 @@ public class LocationDataUtils {
         if(density >= 3.5) {
             adjustedSpeed = 0.1;
         }
+        //get the lower of the default speed or the new adjusted speed
         adjustedSpeed = defaultSpeed<adjustedSpeed? defaultSpeed : adjustedSpeed;
         return adjustedSpeed;
     }
