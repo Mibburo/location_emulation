@@ -87,12 +87,12 @@ public class LocationDataController {
                     gridY.intValue(),
                     gridX2.intValue(),
                     gridY2.intValue(),
-                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()));
+                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()), "", "");
         } else {
             distance = pathingService.minDistance(dto.getGrid(), gridX.intValue(), gridY.intValue(),
                     null,
                     null,
-                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()));
+                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()), "", "");
         }
 
         return String.valueOf(distance * scale);
@@ -219,13 +219,13 @@ public class LocationDataController {
                                 finalStartLocation.getRight(),
                                 endLocation.getLeft(),
                                 endLocation.getRight(),
-                                dto, isAfterFirst.get(), finalDeckNo);
+                                dto, isAfterFirst.get(), finalDeckNo, "", "");
                     } else {
                          pathingService.minDistance(finalGrid, finalStartLocation.getLeft(),
                                 finalStartLocation.getRight(),
                                 null,
                                 null,
-                                dto, isAfterFirst.get(), finalDeckNo);
+                                dto, isAfterFirst.get(), finalDeckNo, "", "");
                     }
                 } catch (NoSuchAlgorithmException e) {
                     log.error(e.getMessage());

@@ -1,6 +1,7 @@
 package gr.uaegean.location.emulation.service;
 
 import gr.uaegean.location.emulation.model.*;
+import gr.uaegean.location.emulation.model.entity.LocationTO;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -31,7 +32,8 @@ public class PathingService {
     }
 
     public Integer minDistance(String[][] grid, int startX, int startY, Integer endX, Integer endY,
-                               EmulationDTO dto, Boolean isAfterFirst, Integer deckNo)
+                               EmulationDTO dto, Boolean isAfterFirst, Integer deckNo,
+                               String macAddress, String hashedMacAddress)
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 
         log.info("start BFS");
@@ -62,7 +64,8 @@ public class PathingService {
                 if (p.getRow() == endX && p.getCol() == endY) {
                     if(!dto.getIsDistance()) {
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
-                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()], true);
+                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()],
+                                true, macAddress, hashedMacAddress);
                         log.info("end BFS");
                     }
                     return p.getDist();
@@ -71,7 +74,8 @@ public class PathingService {
                 if (LocationDataUtils.exitVal.get(deckNo).contains(grid[p.getRow()][p.getCol()])) {
                     if(!dto.getIsDistance()){
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
-                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()], false);
+                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()],
+                                false, macAddress, hashedMacAddress);
                         log.info("end BFS");
                     }
                     return p.getDist();
@@ -165,16 +169,18 @@ public class PathingService {
     private void destinationFound(String[][] grid, QItem p, Map<String, String> parentMap,
                                   Deque<Pair<Integer, Integer>> route, String startPoint, String parent,
                                   EmulationDTO dto, Boolean isAfterFirst, Integer deckNo, String exitGf,
-                                  Boolean isFaultyDest )
+                                  Boolean isFaultyDest, String macAddress, String hashedMacAddress )
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         Pair<Integer, Integer> pair = new ImmutablePair<Integer, Integer>(p.getRow(), p.getCol());
         route.add(pair);
         route = findPath(parentMap, parent, startPoint, route);
-        locationGenerationService.generateLocationData(route, grid, dto, isAfterFirst, deckNo);
-        if(!isFaultyDest) rerunPathfindingForNextDeck(deckNo, dto, exitGf);
+        LocationTO location = locationGenerationService.generateLocationData(route, grid, dto, isAfterFirst, deckNo, macAddress, hashedMacAddress);
+        macAddress = location.getMacAddress();
+        hashedMacAddress = location.getHashedMacAddress();
+        if(!isFaultyDest) rerunPathfindingForNextDeck(deckNo, dto, exitGf, macAddress, hashedMacAddress);
     }
 
-    private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf){
+    private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf, String macAddress, String hashedMacAddress){
         //if running deck is not deck 7 then get the next deck and rerun pathing
         if(deckNo != 7){
             deckNo--;
@@ -194,7 +200,8 @@ public class PathingService {
                         startLocation.getRight(),
                         null,
                         null,
-                        dto, true, deckNo);
+                        dto, true, deckNo,
+                        macAddress, hashedMacAddress);
             } catch (Exception e) {
                 log.error(e.getMessage());
             }

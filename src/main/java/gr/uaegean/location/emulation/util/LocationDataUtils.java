@@ -142,6 +142,14 @@ public class LocationDataUtils {
         return cl;
     }
 
+    public static void generateLocationAddress(LocationTO locationTo) throws NoSuchAlgorithmException, InvalidKeyException {
+
+        String macAddress = getRandomMacAddress();
+        locationTo.setMacAddress(macAddress);
+        locationTo.setHashedMacAddress(getHmacHash("HmacMD5", macAddress, "123456"));
+
+    }
+
     public static String getRandomMacAddress() {
         String mac = "";
         Random r = new Random();

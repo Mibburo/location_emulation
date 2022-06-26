@@ -29,13 +29,14 @@ public class LocationGenerationService {
 
     public ConcurrentHashMap<String, Integer> gfCapacity = new ConcurrentHashMap<>();
 
-    public void generateLocationData(Deque<Pair<Integer,Integer>> route, String[][] grid,
+    public LocationTO generateLocationData(Deque<Pair<Integer,Integer>> route, String[][] grid,
                                      EmulationDTO dto, Boolean isAfterFirst,
-                                     Integer deckNo) throws NoSuchAlgorithmException, InvalidKeyException {
+                                     Integer deckNo,
+                                     String macAddress, String hashedMacAddress) throws NoSuchAlgorithmException, InvalidKeyException {
 
         Map<String, String> geofences = dto.getGeofences().isEmpty()? LocationDataUtils.gfMap : dto.getGeofences();
 
-        LocationTO locationData = LocationDataUtils.generateLocationAddress();
+        LocationTO locationData = new LocationTO();
         LocalDateTime previousPostTime = LocalDateTime.now();
 
         double dwellTime = 0;
@@ -57,6 +58,9 @@ public class LocationGenerationService {
         gfCapIncrease(prevIdxGf);
         //emulate delay in taking action in the beginning
         if(!isAfterFirst){
+            LocationDataUtils.generateLocationAddress(locationData);
+            macAddress = locationData.getMacAddress();
+            hashedMacAddress = locationData.getHashedMacAddress();
             locationDto.setIsNewPerson(true);
             Long activationDelay = Long.valueOf(LocationDataUtils.getRandomActivationTime());
             log.info("delay in taking action :{}", activationDelay);
@@ -77,6 +81,9 @@ public class LocationGenerationService {
                 setDelay(dto, timeIncrement);
             }
         }
+        locationData.setMacAddress(macAddress);
+        locationData.setHashedMacAddress(hashedMacAddress);
+        locationDto.setIsNewPerson(false);
         Iterator routeIterator = route.iterator();
         while(routeIterator.hasNext()){
 
@@ -145,6 +152,7 @@ public class LocationGenerationService {
 
         }
 
+        return locationData;
     }
 
     private static UserLocationUnit populateLocation(String startGf, Pair<Integer, Integer> coords, EmulationDTO dto,
