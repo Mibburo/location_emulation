@@ -45,7 +45,8 @@ public class LocationDataUtils {
             { "#0000FF", "7BG3" },
             { "#FD648A", "7BG4" },
             { "#F8FD97", "7BG5" },
-            { "#00AFFF", "7BG6, Muster Station" },
+            //{ "#00AFFF", "7BG6, Muster Station" },
+            { "#00AFFF", "7BG6" },
             { "#CADFFF", "S7-6.1" },
             { "#606F22", "S7-6.1-1-entry, us81-1" },
             { "#56A8C2", "S7-6.1-2-entry, us81-2" },
@@ -53,8 +54,6 @@ public class LocationDataUtils {
             { "#70DAB3", "S7-6.2-entry, us82" },
             { "#E9CB72", "S7-6.3" },
             { "#EA2B64", "S7-6.3-entry, us83" },
-
-
             { "#00FFFF", "geofence 3" },
             { "#00AF00", "geofence 4" },
             { "#5F00FF", "geofence 8" },
@@ -63,18 +62,12 @@ public class LocationDataUtils {
             { "#FFAF00", "geofence 12" },
             { "#D5B742", "S8-7.2" },
             { "#4BB5CB", "S8-7.2-exit, exit82" },
-
-
-
-
-
             { "#FE52FE", "S9-8.2-exit, exit92" },
             { "#1F528F", "S8-7.2-entry, us92" },
             { "#858592", "S8-7.3" },
             { "#ED1C24", "S8-7.3-exit, exit83" },
             { "#0F1D79", "S9-8.3-exit, exit93" },
             { "#361788", "S8-7.3-entry, us93" },
-
             { "#77E1DF", "8BG1" },
             { "#CE5397", "8BG2" },
             { "#7092BE", "8BG3" },
@@ -87,17 +80,11 @@ public class LocationDataUtils {
             { "#FFAEC9", "8BG10" },
             { "#C8BFE7", "S8-7.1" },
             { "#66F7C0", "S8-7.1-exit-1, exit81" },
-
-
-
             { "#867D3E", "S9-8.1-1, exit91-1" },
             { "#BB0B8F", "S8-7.1-entry-1, us91-1" },
             { "#2D7B15", "S9-8.1-2, exit91-2" },
             { "#A94B23", "S8-7.1-entry-2, us91-2" },
-
             { "#FF6F17", "S8-7.1-exit-2, exit81-2" },
-
-
             { "#A6FFB1", "S9-8.2" },
             { "#AD1414", "9BG2" },
             { "#E08752", "S9-8.3" },
@@ -207,7 +194,9 @@ public class LocationDataUtils {
     public Pair<Integer, Integer> generateFaultyEndPoint(String[][] grid){
         int x = (int) (Math.random() * (grid.length) - 1);
         int y = (int) (Math.random() * (grid[0].length) - 1);
-        if(walls.contains(grid[x][y]) || grid[x][y].equals(exitVal)){
+        if(walls.contains(grid[x][y]) || exitVal.get(7).contains(grid[x][y])
+                || exitVal.get(8).contains(grid[x][y])
+                || exitVal.get(9).contains(grid[x][y])){
             return generateFaultyEndPoint(grid);
         }
         return new ImmutablePair<>(x, y);

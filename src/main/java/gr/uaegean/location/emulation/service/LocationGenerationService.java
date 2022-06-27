@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static gr.uaegean.location.emulation.util.LocationDataUtils.calculateDefaultSpeed;
+import static gr.uaegean.location.emulation.util.LocationDataUtils.*;
 
 @Slf4j
 @Service
@@ -73,7 +73,7 @@ public class LocationGenerationService {
                 dwellTime = dwellTime + timeIncrement;
                 locationDto.setLocationTO(locationData);
                 locationDataService.sendLocationData(locationDto);
-                locationData.setGeofence(new UserGeofenceUnit());
+                //locationData.setGeofence(new UserGeofenceUnit());
                 //after first entry set new person to false
                 locationDto.setIsNewPerson(false);
 
@@ -141,11 +141,23 @@ public class LocationGenerationService {
                 locationData.setLocation(populateLocation(currentGf, coords,  dto,
                         locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
                 locationDto.setLocationTO(locationData);
-                locationData.setGeofence(new UserGeofenceUnit());
+                //locationData.setGeofence(new UserGeofenceUnit());
                 locationDataService.sendLocationData(locationDto);
                 locationDto.setIsNewPerson(false);
                 if(route.size() == 0 && deckNo != 7){
                     gfCapDecrease(currentGf);
+                }
+            }
+
+            //if route does not end in muster station then generate location for 5 more minutes
+            if(route.size() == 0
+                    && !exitVal.get(7).contains(currentGf)
+                    && !exitVal.get(8).contains(currentGf)
+                    && !exitVal.get(9).contains(currentGf)){
+                LocalDateTime endTime = LocalDateTime.now().plusMinutes(5);
+                while(LocalDateTime.now().isBefore(endTime)){
+                    locationDataService.sendLocationData(locationDto);
+                    setDelay(dto, 20);
                 }
             }
             prevIdxGf = grid[coords.getLeft()][coords.getRight()];

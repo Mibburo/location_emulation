@@ -66,7 +66,7 @@ public class PathingService {
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
                                 dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()],
                                 true, macAddress, hashedMacAddress);
-                        log.info("end BFS");
+                        log.info("end BFS Faulty");
                     }
                     return p.getDist();
                 }

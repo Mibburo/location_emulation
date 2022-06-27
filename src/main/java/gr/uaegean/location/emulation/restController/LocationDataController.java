@@ -195,10 +195,9 @@ public class LocationDataController {
         //generate faulty end location
         locationGenerationService.evictGfCapMap();
         for(int i=0; i<dto.getNoOfData(); i++){
-            Integer deckNo = 7;
+            //set random deck as start if no specific deck has been set
+            Integer deckNo = dto.getDeck() == null? random.ints(7, 10).findFirst().getAsInt() : dto.getDeck();
 
-            //set random deck as start
-            deckNo = random.ints(7, 10).findFirst().getAsInt();
             grid = decks.get(deckNo);
 
             dto.setSpeed(locationDataUtils.getRandomSpeed());
@@ -212,7 +211,7 @@ public class LocationDataController {
 
                     Pair<Integer, Integer> finalStartLocation = startLocation.get();
 
-                    if (dto.getPathErrorPrcntg() >= (int) (Math.random() * (100))){
+                    if (dto.getPathErrorPrcntg() > (int) (Math.random() * (100))){
                         Pair<Integer, Integer> endLocation = locationDataUtils.generateFaultyEndPoint(finalGrid);
                         log.info("start Location :{}, end location :{}", finalStartLocation, endLocation);
                         pathingService.minDistance(finalGrid, finalStartLocation.getLeft(),
