@@ -36,6 +36,8 @@ public class EmulationDTO {
     private Boolean isDistance;
     private Boolean afterFirstWave;
     private Integer deck;
+    private Integer oxygenProblemPrnctg;
+    private Integer heartProblemPrnctg;
 
     public void populateDefaultGeofenceColors(){
         List<GeofenceAttributes> colorCodeList = new ArrayList<>();

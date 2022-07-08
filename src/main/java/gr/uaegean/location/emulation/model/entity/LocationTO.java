@@ -17,4 +17,6 @@ public class LocationTO  implements Serializable {
     private String hashedMacAddress;
     private UserGeofenceUnit geofence;
     private UserLocationUnit location;
+    private String saturation;
+    private String heartBeat;
 }

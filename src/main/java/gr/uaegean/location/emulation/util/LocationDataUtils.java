@@ -295,4 +295,18 @@ public class LocationDataUtils {
         return scale;
     }
 
+    public static Integer generateOxygenSaturation(Boolean hasProblem){
+
+        Integer oxygenSaturationPctg = hasProblem? random.ints(50, 93).findFirst().getAsInt() :
+                random.ints(94, 100).findFirst().getAsInt();
+        return oxygenSaturationPctg;
+    }
+
+    public static Integer generateHeartBeat(Boolean hasProblem){
+
+        Integer heartBeat = hasProblem? random.ints(1, 39).findFirst().getAsInt() :
+                random.ints(40, 100).findFirst().getAsInt();
+        return heartBeat;
+    }
+
 }

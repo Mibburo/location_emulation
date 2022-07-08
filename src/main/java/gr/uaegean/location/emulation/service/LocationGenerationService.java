@@ -65,13 +65,26 @@ public class LocationGenerationService {
             Long activationDelay = Long.valueOf(LocationDataUtils.getRandomActivationTime());
             log.info("delay in taking action :{}", activationDelay);
             LocalDateTime activationTime = LocalDateTime.now().plusSeconds(activationDelay);
+
+            //set oxygen  and heart beat rate at problems at first
+            if(locationDto.getIsNewPerson()){
+                locationDto.setHasOxygenProblem(dto.getOxygenProblemPrnctg() != null
+                        && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100))?
+                        true: false);
+                locationDto.setHasHeartProblem(dto.getHeartProblemPrnctg() != null
+                        && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100))?
+                        true: false);
+            }
+
             while(LocalDateTime.now().isBefore(activationTime)){
 
                 locationData.setLocation(populateLocation(prevIdxGf,  startCoords, dto,
                         locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
 
                 dwellTime = dwellTime + timeIncrement;
+                generateHeartAndOxygenLevels(locationDto, locationData);
                 locationDto.setLocationTO(locationData);
+
                 locationDataService.sendLocationData(locationDto);
                 //locationData.setGeofence(new UserGeofenceUnit());
                 //after first entry set new person to false
@@ -100,6 +113,7 @@ public class LocationGenerationService {
                             locationData.getHashedMacAddress(),  dwellTime, LocalDateTime.now(), deckNo));
                     locationData.setLocation(populateLocation(currentGf, coords,  dto,
                             locationData.getHashedMacAddress(),  LocalDateTime.now(), deckNo));
+                    generateHeartAndOxygenLevels(locationDto, locationData);
                     locationDto.setLocationTO(locationData);
                     locationDataService.sendLocationData(locationDto);
                 }
@@ -113,6 +127,7 @@ public class LocationGenerationService {
                             Double.valueOf(0), LocalDateTime.now(), deckNo));
                     locationData.setLocation(populateLocation(currentGf, coords,  dto,
                             locationData.getHashedMacAddress(),  LocalDateTime.now(), deckNo));
+                    generateHeartAndOxygenLevels(locationDto, locationData);
                     locationDto.setLocationTO(locationData);
                     locationDataService.sendLocationData(locationDto);
                 }
@@ -140,6 +155,7 @@ public class LocationGenerationService {
                 previousPostTime = LocalDateTime.now();
                 locationData.setLocation(populateLocation(currentGf, coords,  dto,
                         locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
+                generateHeartAndOxygenLevels(locationDto, locationData);
                 locationDto.setLocationTO(locationData);
                 //locationData.setGeofence(new UserGeofenceUnit());
                 locationDataService.sendLocationData(locationDto);
@@ -213,6 +229,15 @@ public class LocationGenerationService {
         geofence.setDeck(String.valueOf(deckNo));
 
         return geofence;
+    }
+
+    private void generateHeartAndOxygenLevels(LocationDTO locationDto, LocationTO locationTo){
+        Integer oxygenSaturation = locationDto.getHasOxygenProblem()?
+                generateOxygenSaturation(true): generateOxygenSaturation(false);
+        Integer heartBeat = locationDto.getHasHeartProblem()?
+                generateHeartBeat(true): generateHeartBeat(false);
+        locationTo.setSaturation(String.valueOf(oxygenSaturation));
+        locationTo.setHeartBeat(String.valueOf(heartBeat));
     }
 
     private void setDelay(EmulationDTO dto, Integer timeIncrement){
