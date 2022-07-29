@@ -32,8 +32,8 @@ public class PathingService {
     }
 
     public Integer minDistance(String[][] grid, int startX, int startY, Integer endX, Integer endY,
-                               EmulationDTO dto, Boolean isAfterFirst, Integer deckNo,
-                               String macAddress, String hashedMacAddress, LocationDTO locationDTO)
+                               EmulationDTO dto, Integer deckNo,
+                               LocationDTO locationDTO)
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 
         log.info("start BFS");
@@ -67,8 +67,8 @@ public class PathingService {
                 if (p.getRow() == endX && p.getCol() == endY) {
                     if(!dto.getIsDistance()) {
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
-                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()],
-                                true, macAddress, hashedMacAddress, locationDTO);
+                                dto, deckNo, grid[p.getRow()][p.getCol()],
+                                true, locationDTO);
                         log.info("end BFS Faulty");
                     }
                     return p.getDist();
@@ -77,8 +77,8 @@ public class PathingService {
                 if (LocationDataUtils.exitVal.get(deckNo).contains(grid[p.getRow()][p.getCol()])) {
                     if(!dto.getIsDistance()){
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
-                                dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()],
-                                false, macAddress, hashedMacAddress, locationDTO);
+                                dto, deckNo, grid[p.getRow()][p.getCol()],
+                                false, locationDTO);
                         log.info("end BFS");
                     }
                     return p.getDist();
@@ -171,19 +171,19 @@ public class PathingService {
 
     private void destinationFound(String[][] grid, QItem p, Map<String, String> parentMap,
                                   Deque<Pair<Integer, Integer>> route, String startPoint, String parent,
-                                  EmulationDTO dto, Boolean isAfterFirst, Integer deckNo, String exitGf,
-                                  Boolean isFaultyDest, String macAddress, String hashedMacAddress, LocationDTO locationDTO )
+                                  EmulationDTO dto, Integer deckNo, String exitGf,
+                                  Boolean isFaultyDest, LocationDTO locationDTO )
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         Pair<Integer, Integer> pair = new ImmutablePair<Integer, Integer>(p.getRow(), p.getCol());
         route.add(pair);
         route = findPath(parentMap, parent, startPoint, route);
-        LocationTO location = locationGenerationService.generateLocationData(route, grid, dto, isAfterFirst, deckNo, macAddress, hashedMacAddress, locationDTO);
-        macAddress = location.getMacAddress();
-        hashedMacAddress = location.getHashedMacAddress();
-        if(!isFaultyDest) rerunPathfindingForNextDeck(deckNo, dto, exitGf, macAddress, hashedMacAddress, locationDTO);
+        LocationTO location = locationGenerationService.generateLocationData(route, grid, dto, deckNo, locationDTO);
+        locationDTO.getLocationTO().setMacAddress(location.getMacAddress());
+        locationDTO.getLocationTO().setHashedMacAddress(location.getHashedMacAddress());
+        if(!isFaultyDest) rerunPathfindingForNextDeck(deckNo, dto, exitGf, locationDTO);
     }
 
-    private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf, String macAddress, String hashedMacAddress, LocationDTO locationDTO){
+    private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf, LocationDTO locationDTO){
         //if running deck is not deck 7 then get the next deck and rerun pathing
         if(deckNo != 7){
             deckNo--;
@@ -203,8 +203,8 @@ public class PathingService {
                         startLocation.getRight(),
                         null,
                         null,
-                        dto, true, deckNo,
-                        macAddress, hashedMacAddress, locationDTO);
+                        dto, deckNo,
+                        locationDTO);
             } catch (Exception e) {
                 log.error(e.getMessage());
             }

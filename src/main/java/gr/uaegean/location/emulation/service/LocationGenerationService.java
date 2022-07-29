@@ -4,7 +4,6 @@ import gr.uaegean.location.emulation.model.*;
 import gr.uaegean.location.emulation.model.entity.LocationTO;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,14 +30,16 @@ public class LocationGenerationService {
     public ConcurrentHashMap<String, Integer> gfCapacity = new ConcurrentHashMap<>();
 
     public LocationTO generateLocationData(Deque<Pair<Integer,Integer>> route, String[][] grid,
-                                     EmulationDTO dto, Boolean isAfterFirst,
-                                     Integer deckNo,
-                                     String macAddress, String hashedMacAddress, LocationDTO locationDto) throws NoSuchAlgorithmException, InvalidKeyException {
+                                     EmulationDTO dto, Integer deckNo,
+                                     LocationDTO locationDto) throws NoSuchAlgorithmException, InvalidKeyException {
 
         Map<String, String> geofences = dto.getGeofences().isEmpty()? LocationDataUtils.gfMap : dto.getGeofences();
 
         LocationTO locationData = new LocationTO();
         LocalDateTime previousPostTime = LocalDateTime.now();
+
+        String macAddress = locationDto.getLocationTO().getMacAddress();
+        String hashedMacAddress = locationDto.getLocationTO().getHashedMacAddress();
 
         double dwellTime = 0;
         Integer timeIncrement = 20;
@@ -59,7 +60,7 @@ public class LocationGenerationService {
                 Double.valueOf(0), LocalDateTime.now(), deckNo));
         gfCapIncrease(prevIdxGf);
         //emulate delay in taking action in the beginning
-        if(!isAfterFirst){
+        if(locationDto.getIsNewPerson()){
             LocationDataUtils.generateLocationAddress(locationData);
             macAddress = locationData.getMacAddress();
             hashedMacAddress = locationData.getHashedMacAddress();
@@ -67,16 +68,6 @@ public class LocationGenerationService {
             Long activationDelay = Long.valueOf(LocationDataUtils.getRandomActivationTime());
             log.info("delay in taking action :{}", activationDelay);
             LocalDateTime activationTime = LocalDateTime.now().plusSeconds(activationDelay);
-
-            //set oxygen  and heart beat rate at problems at first
-            /*if(locationDto.getIsNewPerson()){
-                locationDto.setHasOxygenProblem(dto.getOxygenProblemPrnctg() != null
-                        && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100))?
-                        true: false);
-                locationDto.setHasHeartProblem(dto.getHeartProblemPrnctg() != null
-                        && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100))?
-                        true: false);
-            }*/
 
             while(LocalDateTime.now().isBefore(activationTime)){
 
@@ -95,6 +86,7 @@ public class LocationGenerationService {
                 //for real time run dto.hasDelay = true
                 setDelay(dto, timeIncrement);
             }
+            locationDto.setIsNewPerson(false);
         }
         locationData.setMacAddress(macAddress);
         locationData.setHashedMacAddress(hashedMacAddress);
@@ -208,11 +200,8 @@ public class LocationGenerationService {
         location.setBuildingId("shipId");
         location.setCampusId("campusId");
         location.setFloorId(String.valueOf(deckNo));
-//        location.setDeck(String.valueOf(deckNo));
         location.setErrorLevel(String.valueOf(dto.getPositionError()));
 
-        log.info("bbbbbbbbbbbbbbbbbbbb coords :{}, scale :{}, deckNo :{}", coords, scale, deckNo);
-        log.info("cccccccccccccccccccc final x :{}, y :{}", location.getXLocation(), location.getYLocation());
         return location;
     }
 
@@ -275,13 +264,12 @@ public class LocationGenerationService {
         return gfCapacity;
     }
 
-    public void generateSingleLocation(String[][] grid, Pair<Integer,Integer> startCoords, EmulationDTO dto) throws NoSuchAlgorithmException, InvalidKeyException {
+    public void generateSingleLocation(String[][] grid, Pair<Integer,Integer> startCoords, Integer deckNo,
+                                       EmulationDTO dto) throws NoSuchAlgorithmException, InvalidKeyException {
         String prevIdxGf = grid[startCoords.getLeft()][startCoords.getRight()];
         LocationTO locationData = new LocationTO();
 
         LocationDTO locationDto = new LocationDTO();
-        //this is a new person initially set to true
-        log.info("11111111111111111 start coords :{}", startCoords);
 
         locationDto.setLocationTO(locationData);
 
@@ -289,37 +277,26 @@ public class LocationGenerationService {
         locationData.setGeofence(populateGeofence(prevIdxGf,
                 geofences.get(prevIdxGf),
                 "ZONE_IN", locationData.getMacAddress(), locationData.getHashedMacAddress(),
-                Double.valueOf(0), LocalDateTime.now(), dto.getDeck()));
+                Double.valueOf(0), LocalDateTime.now(), deckNo));
         gfCapIncrease(prevIdxGf);
         LocationDataUtils.generateLocationAddress(locationData);
-        String macAddress = locationData.getMacAddress();
-        String hashedMacAddress = locationData.getHashedMacAddress();
         locationDto.setIsNewPerson(true);
 
         dto.setGeofences(LocationDataUtils.gfMap);
 
         //set oxygen  and heart beat rate at problems at first
         locationDto.setHasOxygenProblem(dto.getOxygenProblemPrnctg() != null
-                && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100))?
-                true: false);
+                && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100)));
         locationDto.setHasHeartProblem(dto.getHeartProblemPrnctg() != null
-                && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100))?
-                true: false);
+                && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100)));
 
         locationData.setLocation(populateLocation(prevIdxGf,  startCoords, dto,
-                    locationData.getHashedMacAddress(), LocalDateTime.now(), dto.getDeck()));
+                    locationData.getHashedMacAddress(), LocalDateTime.now(), deckNo));
 
         generateHeartAndOxygenLevels(locationDto, locationData);
         locationDto.setLocationTO(locationData);
 
         locationDataService.sendLocationData(locationDto);
-
-        /*Deque<Pair<Integer,Integer>> route = new LinkedList<>();
-        route.push(startCoords);
-        generateLocationData( route, grid,
-                dto, false,
-                dto.getDeck(),
-                "", "");*/
 
     }
 

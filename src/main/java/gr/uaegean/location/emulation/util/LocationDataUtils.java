@@ -312,13 +312,11 @@ public class LocationDataUtils {
 
     public Integer coordToPixel(Double coord, Double scale, Integer deckNo, Boolean isX){
 
-        Double pixel = coord / scale;
-        Integer pixelCoord = pixel.intValue();
-
         Integer deckImageOffset = 0;
         if(deckNo != 7 && isX) deckImageOffset = 90;
+        Double pixel = (coord - deckImageOffset) / scale;
 
-        return pixelCoord - deckImageOffset;
+        return pixel.intValue();
     }
 
 }
