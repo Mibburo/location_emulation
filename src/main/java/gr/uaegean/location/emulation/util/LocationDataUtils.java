@@ -1,5 +1,6 @@
 package gr.uaegean.location.emulation.util;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import gr.uaegean.location.emulation.model.EmulationDTO;
 import gr.uaegean.location.emulation.model.GeofenceAttributes;
 import gr.uaegean.location.emulation.model.entity.LocationTO;
@@ -278,7 +279,7 @@ public class LocationDataUtils {
         return capacity/spaceM2;
     }
 
-    private static Double getScaleByDeck(EmulationDTO dto, Integer deckNo){
+    public static Double getScaleByDeck(EmulationDTO dto, Integer deckNo){
         Double scale = null;
         switch (deckNo){
             case 7:
@@ -307,6 +308,17 @@ public class LocationDataUtils {
         Integer heartBeat = hasProblem? random.ints(1, 39).findFirst().getAsInt() :
                 random.ints(40, 100).findFirst().getAsInt();
         return heartBeat;
+    }
+
+    public Integer coordToPixel(Double coord, Double scale, Integer deckNo, Boolean isX){
+
+        Double pixel = coord / scale;
+        Integer pixelCoord = pixel.intValue();
+
+        Integer deckImageOffset = 0;
+        if(deckNo != 7 && isX) deckImageOffset = 90;
+
+        return pixelCoord - deckImageOffset;
     }
 
 }

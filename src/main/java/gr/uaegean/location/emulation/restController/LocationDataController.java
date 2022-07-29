@@ -1,13 +1,14 @@
 package gr.uaegean.location.emulation.restController;
 
-import gr.uaegean.location.emulation.model.EmulationDTO;
-import gr.uaegean.location.emulation.model.GeofenceAttributes;
-import gr.uaegean.location.emulation.model.LocationServiceDTO;
+import gr.uaegean.location.emulation.model.*;
+import gr.uaegean.location.emulation.model.entity.LocationTO;
+import gr.uaegean.location.emulation.service.LocationDataService;
 import gr.uaegean.location.emulation.service.LocationGenerationService;
 import gr.uaegean.location.emulation.service.MappingService;
 import gr.uaegean.location.emulation.service.PathingService;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
@@ -29,18 +30,20 @@ public class LocationDataController {
     private LocationDataUtils locationDataUtils;
     private PathingService pathingService;
     private LocationGenerationService locationGenerationService;
+    private LocationDataService locationDataService;
     static Random random = new Random();
 
     @Autowired
     LocationDataController(MappingService mappingService,
                            LocationDataUtils locationDataUtils,
                            PathingService pathingService,
-                           LocationGenerationService locationGenerationService){
+                           LocationGenerationService locationGenerationService,
+                           LocationDataService locationDataService){
         this.mappingService = mappingService;
         this.locationDataUtils = locationDataUtils;
         this.pathingService = pathingService;
         this.locationGenerationService = locationGenerationService;
-
+        this.locationDataService = locationDataService;
     }
 
     @PostMapping("/getGeofence")
@@ -79,6 +82,15 @@ public class LocationDataController {
 
         dto.setIsDistance(true);
 
+        LocationDTO locationDto = new LocationDTO();
+        locationDto.setIsNewPerson(true);
+        locationDto.setHasHeartProblem(true);
+        locationDto.setHasOxygenProblem(true);
+        LocationTO locTo = new LocationTO();
+        locTo.setMacAddress("");
+        locTo.setHashedMacAddress("");
+        locationDto.setLocationTO(locTo);
+
         Integer distance = 0;
         if(locationServiceDTO.getXCoord2() != null && locationServiceDTO.getYCoord2() != null){
             log.info("start Location x :{}, y :{} , end location x :{}, y :{}", gridX.intValue(), gridY.intValue(),
@@ -87,12 +99,12 @@ public class LocationDataController {
                     gridY.intValue(),
                     gridX2.intValue(),
                     gridY2.intValue(),
-                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()), "", "");
+                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()), "", "", locationDto);
         } else {
             distance = pathingService.minDistance(dto.getGrid(), gridX.intValue(), gridY.intValue(),
                     null,
                     null,
-                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()), "", "");
+                    dto, false, Integer.valueOf(locationServiceDTO.getDeck()), "", "", locationDto);
         }
 
         return String.valueOf(distance * scale);
@@ -210,6 +222,18 @@ public class LocationDataController {
                 try {
 
                     Pair<Integer, Integer> finalStartLocation = startLocation.get();
+                    LocationDTO locationDto = new LocationDTO();
+                    locationDto.setIsNewPerson(true);
+                    locationDto.setHasOxygenProblem(dto.getOxygenProblemPrnctg() != null
+                            && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100))?
+                            true: false);
+                    locationDto.setHasHeartProblem(dto.getHeartProblemPrnctg() != null
+                            && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100))?
+                            true: false);
+                    LocationTO locTo = new LocationTO();
+                    locTo.setMacAddress("");
+                    locTo.setHashedMacAddress("");
+                    locationDto.setLocationTO(locTo);
 
                     if (dto.getPathErrorPrcntg() > (int) (Math.random() * (100))){
                         Pair<Integer, Integer> endLocation = locationDataUtils.generateFaultyEndPoint(finalGrid);
@@ -218,13 +242,13 @@ public class LocationDataController {
                                 finalStartLocation.getRight(),
                                 endLocation.getLeft(),
                                 endLocation.getRight(),
-                                dto, isAfterFirst.get(), finalDeckNo, "", "");
+                                dto, isAfterFirst.get(), finalDeckNo, "", "", locationDto);
                     } else {
                          pathingService.minDistance(finalGrid, finalStartLocation.getLeft(),
                                 finalStartLocation.getRight(),
                                 null,
                                 null,
-                                dto, isAfterFirst.get(), finalDeckNo, "", "");
+                                dto, isAfterFirst.get(), finalDeckNo, "", "", locationDto);
                     }
                 } catch (NoSuchAlgorithmException e) {
                     log.error(e.getMessage());
@@ -235,6 +259,149 @@ public class LocationDataController {
                 } catch (IOException e) {
                     log.error(e.getMessage());
                     e.printStackTrace();
+                }
+
+            }).start();
+
+        }
+    }
+
+    @PostMapping("/generateLocations")
+    public void generateLocations(@RequestBody EmulationDTO dto) {
+
+        String[][] deck7 = mappingService.convertDeck7ToColorArray();
+        String[][] deck8 = mappingService.convertDeck8ToColorArray();
+        String[][] deck9 = mappingService.convertDeck9ToColorArray();
+
+        Map<Integer, String[][]> decks = new HashMap<>();
+        decks.put(7, deck7);
+        decks.put(8, deck8);
+        decks.put(9, deck9);
+
+        dto.setDeck7Scale(locationDataUtils.calculateScale( 150, deck7.length));
+        dto.setDeck8Scale(locationDataUtils.calculateScale(65, deck8.length));
+        dto.setDeck9Scale(locationDataUtils.calculateScale(65, deck9.length));
+
+        for(int i=0; i<dto.getNoOfData(); i++) {
+            //set random deck as start if no specific deck has been set
+            Integer deckNo = dto.getDeck() == null ? random.ints(7, 10).findFirst().getAsInt() : dto.getDeck();
+
+            String[][] grid = decks.get(deckNo);
+            AtomicReference<Pair<Integer, Integer>> startLocation = new AtomicReference<>(locationDataUtils.generateRandomStartPoint(grid));
+            log.info("aaaaaaaaaaaaaaaaaaa startLocation :{}", startLocation);
+            new Thread(() -> {
+                try {
+                    Pair<Integer, Integer> finalStartLocation = startLocation.get();
+                    locationGenerationService.generateSingleLocation(grid, finalStartLocation, dto);
+                } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+                    log.error(e.getMessage());
+                }
+
+            }).start();
+        }
+    }
+
+    @PostMapping("/runSimulation")
+    public void runSimulation(@RequestBody EmulationDTO dto) throws IOException, InterruptedException {
+
+        String[][] deck7 = mappingService.convertDeck7ToColorArray();
+        String[][] deck8 = mappingService.convertDeck8ToColorArray();
+        String[][] deck9 = mappingService.convertDeck9ToColorArray();
+
+        Map<Integer, String[][]> decks = new HashMap<>();
+        decks.put(7, deck7);
+        decks.put(8, deck8);
+        decks.put(9, deck9);
+
+        String[][] grid = null;
+        //dto.setDeck7Scale(locationDataUtils.calculateScale(dto.getRealX() == null? 143: dto.getRealX(), deck7.length));
+        dto.setDeck7Scale(locationDataUtils.calculateScale( 150, deck7.length));
+        dto.setDeck8Scale(locationDataUtils.calculateScale(65, deck8.length));
+        dto.setDeck9Scale(locationDataUtils.calculateScale(65, deck9.length));
+
+        dto.setPathErrorPrcntg(dto.getPathErrorPrcntg() == null? 3 : dto.getPathErrorPrcntg());
+        dto.setPositionError(dto.getPositionError() == null? 0.5 : dto.getPositionError());
+        //first wave of passengers
+        dto.setAfterFirstWave(false);
+        //format timestamp
+        dto.setStartTimestamp(LocationDataUtils.dateToString(LocalDateTime.now()));
+        log.info("start timestamp :{}", dto.getStartTimestamp());
+
+        if(dto.getColorCodeList() != null && !dto.getColorCodeList().isEmpty()) {
+            dto.populateNewGeofenceMap();
+        }
+        dto.setGeofences(dto.getGeofences() == null? LocationDataUtils.gfMap : dto.getGeofences());
+        dto.setIsDistance(false);
+        dto.setHasDelay(true);
+        //generate faulty end location
+
+        List<LocationDTO> locationDtos = locationDataService.getLocationData();
+        log.info("ddddddddddddddddddddd location dto list: {}", locationDtos);
+
+        locationGenerationService.evictGfCapMap();
+        for(LocationDTO locDto:locationDtos){
+            //set random deck as start if no specific deck has been set
+            Integer deckNo = Integer.valueOf(locDto.getLocationTO().getLocation().getFloorId());
+            //Integer deckNo = dto.getDeck() == null? random.ints(7, 10).findFirst().getAsInt() : dto.getDeck();
+
+            grid = decks.get(deckNo);
+
+            dto.setSpeed(locationDataUtils.getRandomSpeed());
+            AtomicReference<Pair<Integer, Integer>> startLocation = new AtomicReference<>(locationDataUtils.generateRandomStartPoint(grid));
+            AtomicReference<Boolean> isAfterFirst = new AtomicReference<>(false);
+
+            String[][] finalGrid = grid;
+            Integer finalDeckNo = deckNo;
+            new Thread(() -> {
+                try {
+
+                    locDto.setHasOxygenProblem(dto.getOxygenProblemPrnctg() != null
+                            && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100))?
+                            true: false);
+                    locDto.setHasHeartProblem(dto.getHeartProblemPrnctg() != null
+                            && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100))?
+                            true: false);
+                    //convert real coords to pixels for grid
+                    Integer xLoc = locationDataUtils.coordToPixel(
+                            Double.valueOf(locDto.getLocationTO().getLocation().getXLocation()),
+                            LocationDataUtils.getScaleByDeck(dto, deckNo),
+                            deckNo, true);
+
+                    Integer yLoc = locationDataUtils.coordToPixel(
+                            Double.valueOf(locDto.getLocationTO().getLocation().getYLocation()),
+                            LocationDataUtils.getScaleByDeck(dto, deckNo),
+                            deckNo, false);
+
+                    log.info("fffffffffffffffffffff actual x :{}, actual y :{}, xLoc :{}, yLoc :{}"
+                            ,locDto.getLocationTO().getLocation().getXLocation(),
+                            locDto.getLocationTO().getLocation().getYLocation(),
+                            xLoc,
+                            yLoc);
+                    Pair<Integer, Integer> finalStartLocation =
+                            new ImmutablePair<>(xLoc, yLoc);
+                    //Pair<Integer, Integer> finalStartLocation = startLocation.get();
+
+                    if (dto.getPathErrorPrcntg() > (int) (Math.random() * (100))){
+                        Pair<Integer, Integer> endLocation = locationDataUtils.generateFaultyEndPoint(finalGrid);
+                        log.info("start Location :{}, end location :{}", finalStartLocation, endLocation);
+                        pathingService.minDistance(finalGrid, finalStartLocation.getLeft(),
+                                finalStartLocation.getRight(),
+                                endLocation.getLeft(),
+                                endLocation.getRight(),
+                                dto, true, finalDeckNo,
+                                locDto.getLocationTO().getMacAddress(),
+                                locDto.getLocationTO().getHashedMacAddress(), locDto);
+                    } else {
+                        pathingService.minDistance(finalGrid, finalStartLocation.getLeft(),
+                                finalStartLocation.getRight(),
+                                null,
+                                null,
+                                dto, true, finalDeckNo,
+                                locDto.getLocationTO().getMacAddress(),
+                                locDto.getLocationTO().getHashedMacAddress(), locDto);
+                    }
+                } catch (NoSuchAlgorithmException | InvalidKeyException | IOException e) {
+                    log.error(e.getMessage());
                 }
 
             }).start();

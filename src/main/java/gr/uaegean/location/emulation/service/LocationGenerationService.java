@@ -4,6 +4,7 @@ import gr.uaegean.location.emulation.model.*;
 import gr.uaegean.location.emulation.model.entity.LocationTO;
 import gr.uaegean.location.emulation.util.LocationDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ public class LocationGenerationService {
     public LocationTO generateLocationData(Deque<Pair<Integer,Integer>> route, String[][] grid,
                                      EmulationDTO dto, Boolean isAfterFirst,
                                      Integer deckNo,
-                                     String macAddress, String hashedMacAddress) throws NoSuchAlgorithmException, InvalidKeyException {
+                                     String macAddress, String hashedMacAddress, LocationDTO locationDto) throws NoSuchAlgorithmException, InvalidKeyException {
 
         Map<String, String> geofences = dto.getGeofences().isEmpty()? LocationDataUtils.gfMap : dto.getGeofences();
 
@@ -46,11 +47,12 @@ public class LocationGenerationService {
         Pair<Integer,Integer> startCoords = route.getFirst();
         String prevIdxGf = grid[startCoords.getLeft()][startCoords.getRight()];
 
-        LocationDTO locationDto = new LocationDTO();
+        //LocationDTO locationDto = new LocationDTO();
         //this is a new person initially set to true
 
         locationDto.setLocationTO(locationData);
         //add geofence at start
+
         locationData.setGeofence(populateGeofence(prevIdxGf,
                 geofences.get(prevIdxGf),
                 "ZONE_IN", locationData.getMacAddress(), locationData.getHashedMacAddress(),
@@ -67,14 +69,14 @@ public class LocationGenerationService {
             LocalDateTime activationTime = LocalDateTime.now().plusSeconds(activationDelay);
 
             //set oxygen  and heart beat rate at problems at first
-            if(locationDto.getIsNewPerson()){
+            /*if(locationDto.getIsNewPerson()){
                 locationDto.setHasOxygenProblem(dto.getOxygenProblemPrnctg() != null
                         && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100))?
                         true: false);
                 locationDto.setHasHeartProblem(dto.getHeartProblemPrnctg() != null
                         && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100))?
                         true: false);
-            }
+            }*/
 
             while(LocalDateTime.now().isBefore(activationTime)){
 
@@ -209,6 +211,8 @@ public class LocationGenerationService {
 //        location.setDeck(String.valueOf(deckNo));
         location.setErrorLevel(String.valueOf(dto.getPositionError()));
 
+        log.info("bbbbbbbbbbbbbbbbbbbb coords :{}, scale :{}, deckNo :{}", coords, scale, deckNo);
+        log.info("cccccccccccccccccccc final x :{}, y :{}", location.getXLocation(), location.getYLocation());
         return location;
     }
 
@@ -269,6 +273,54 @@ public class LocationGenerationService {
 
     public Map<String, Integer> getGfCapMap(){
         return gfCapacity;
+    }
+
+    public void generateSingleLocation(String[][] grid, Pair<Integer,Integer> startCoords, EmulationDTO dto) throws NoSuchAlgorithmException, InvalidKeyException {
+        String prevIdxGf = grid[startCoords.getLeft()][startCoords.getRight()];
+        LocationTO locationData = new LocationTO();
+
+        LocationDTO locationDto = new LocationDTO();
+        //this is a new person initially set to true
+        log.info("11111111111111111 start coords :{}", startCoords);
+
+        locationDto.setLocationTO(locationData);
+
+        Map<String, String> geofences = LocationDataUtils.gfMap;
+        locationData.setGeofence(populateGeofence(prevIdxGf,
+                geofences.get(prevIdxGf),
+                "ZONE_IN", locationData.getMacAddress(), locationData.getHashedMacAddress(),
+                Double.valueOf(0), LocalDateTime.now(), dto.getDeck()));
+        gfCapIncrease(prevIdxGf);
+        LocationDataUtils.generateLocationAddress(locationData);
+        String macAddress = locationData.getMacAddress();
+        String hashedMacAddress = locationData.getHashedMacAddress();
+        locationDto.setIsNewPerson(true);
+
+        dto.setGeofences(LocationDataUtils.gfMap);
+
+        //set oxygen  and heart beat rate at problems at first
+        locationDto.setHasOxygenProblem(dto.getOxygenProblemPrnctg() != null
+                && dto.getOxygenProblemPrnctg() > (int) (Math.random() * (100))?
+                true: false);
+        locationDto.setHasHeartProblem(dto.getHeartProblemPrnctg() != null
+                && dto.getHeartProblemPrnctg() > (int) (Math.random() * (100))?
+                true: false);
+
+        locationData.setLocation(populateLocation(prevIdxGf,  startCoords, dto,
+                    locationData.getHashedMacAddress(), LocalDateTime.now(), dto.getDeck()));
+
+        generateHeartAndOxygenLevels(locationDto, locationData);
+        locationDto.setLocationTO(locationData);
+
+        locationDataService.sendLocationData(locationDto);
+
+        /*Deque<Pair<Integer,Integer>> route = new LinkedList<>();
+        route.push(startCoords);
+        generateLocationData( route, grid,
+                dto, false,
+                dto.getDeck(),
+                "", "");*/
+
     }
 
 }

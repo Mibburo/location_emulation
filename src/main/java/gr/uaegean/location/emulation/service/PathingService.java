@@ -33,7 +33,7 @@ public class PathingService {
 
     public Integer minDistance(String[][] grid, int startX, int startY, Integer endX, Integer endY,
                                EmulationDTO dto, Boolean isAfterFirst, Integer deckNo,
-                               String macAddress, String hashedMacAddress)
+                               String macAddress, String hashedMacAddress, LocationDTO locationDTO)
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 
         log.info("start BFS");
@@ -60,12 +60,15 @@ public class PathingService {
 
             // Destination found;
             // faulty destination, enters only when faulty destination exists
+
+
+
             if(endX != null && endY !=null){
                 if (p.getRow() == endX && p.getCol() == endY) {
                     if(!dto.getIsDistance()) {
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
                                 dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()],
-                                true, macAddress, hashedMacAddress);
+                                true, macAddress, hashedMacAddress, locationDTO);
                         log.info("end BFS Faulty");
                     }
                     return p.getDist();
@@ -75,7 +78,7 @@ public class PathingService {
                     if(!dto.getIsDistance()){
                         destinationFound(grid, p, parentMap, route, startPoint, parent,
                                 dto, isAfterFirst, deckNo, grid[p.getRow()][p.getCol()],
-                                false, macAddress, hashedMacAddress);
+                                false, macAddress, hashedMacAddress, locationDTO);
                         log.info("end BFS");
                     }
                     return p.getDist();
@@ -169,18 +172,18 @@ public class PathingService {
     private void destinationFound(String[][] grid, QItem p, Map<String, String> parentMap,
                                   Deque<Pair<Integer, Integer>> route, String startPoint, String parent,
                                   EmulationDTO dto, Boolean isAfterFirst, Integer deckNo, String exitGf,
-                                  Boolean isFaultyDest, String macAddress, String hashedMacAddress )
+                                  Boolean isFaultyDest, String macAddress, String hashedMacAddress, LocationDTO locationDTO )
             throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         Pair<Integer, Integer> pair = new ImmutablePair<Integer, Integer>(p.getRow(), p.getCol());
         route.add(pair);
         route = findPath(parentMap, parent, startPoint, route);
-        LocationTO location = locationGenerationService.generateLocationData(route, grid, dto, isAfterFirst, deckNo, macAddress, hashedMacAddress);
+        LocationTO location = locationGenerationService.generateLocationData(route, grid, dto, isAfterFirst, deckNo, macAddress, hashedMacAddress, locationDTO);
         macAddress = location.getMacAddress();
         hashedMacAddress = location.getHashedMacAddress();
-        if(!isFaultyDest) rerunPathfindingForNextDeck(deckNo, dto, exitGf, macAddress, hashedMacAddress);
+        if(!isFaultyDest) rerunPathfindingForNextDeck(deckNo, dto, exitGf, macAddress, hashedMacAddress, locationDTO);
     }
 
-    private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf, String macAddress, String hashedMacAddress){
+    private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf, String macAddress, String hashedMacAddress, LocationDTO locationDTO){
         //if running deck is not deck 7 then get the next deck and rerun pathing
         if(deckNo != 7){
             deckNo--;
@@ -201,7 +204,7 @@ public class PathingService {
                         null,
                         null,
                         dto, true, deckNo,
-                        macAddress, hashedMacAddress);
+                        macAddress, hashedMacAddress, locationDTO);
             } catch (Exception e) {
                 log.error(e.getMessage());
             }
