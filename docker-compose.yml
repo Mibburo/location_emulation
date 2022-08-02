@@ -7,5 +7,6 @@ services:
       - 7011
     ports:
       - 7011:7011
-    environment:
+     environment:
+      - RTLS_API_URI=http://dss.aegean.gr:7010
       - KEY=secret

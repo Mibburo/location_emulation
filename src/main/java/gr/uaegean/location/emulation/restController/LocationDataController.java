@@ -208,7 +208,7 @@ public class LocationDataController {
         locationGenerationService.evictGfCapMap();
         for(int i=0; i<dto.getNoOfData(); i++){
             //set random deck as start if no specific deck has been set
-            Integer deckNo = dto.getDeck() == null? random.ints(7, 10).findFirst().getAsInt() : dto.getDeck();
+            Integer deckNo = dto.getDeck() == null? random.ints(5, 10).findFirst().getAsInt() : dto.getDeck();
 
             grid = decks.get(deckNo);
 
@@ -217,7 +217,7 @@ public class LocationDataController {
             AtomicReference<Boolean> isAfterFirst = new AtomicReference<>(false);
 
             String[][] finalGrid = grid;
-            Integer finalDeckNo = deckNo;
+            Integer finalDeckNo = deckNo == 5 || deckNo == 6? 7 : deckNo;
             new Thread(() -> {
                 Pair<Integer, Integer> finalStartLocation = startLocation.get();
                 LocationDTO locationDto = new LocationDTO();
@@ -263,15 +263,16 @@ public class LocationDataController {
 
         for(int i=0; i<dto.getNoOfData(); i++) {
             //set random deck as start if no specific deck has been set
-            Integer deckNo = dto.getDeck() == null ? random.ints(7, 10).findFirst().getAsInt() : dto.getDeck();
+            Integer deckNo = dto.getDeck() == null? random.ints(5, 10).findFirst().getAsInt() : dto.getDeck();
 
+            Integer finalDeckNo = deckNo == 5 || deckNo == 6? 7 : deckNo;
             String[][] grid = decks.get(deckNo);
             AtomicReference<Pair<Integer, Integer>> startLocation = new AtomicReference<>
                     (locationDataUtils.generateRandomStartPoint(grid));
             new Thread(() -> {
                 try {
                     Pair<Integer, Integer> finalStartLocation = startLocation.get();
-                    locationGenerationService.generateSingleLocation(grid, finalStartLocation, deckNo, dto);
+                    locationGenerationService.generateSingleLocation(grid, finalStartLocation, finalDeckNo, dto);
                 } catch (NoSuchAlgorithmException | InvalidKeyException e) {
                     log.error(e.getMessage());
                 }
