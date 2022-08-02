@@ -209,15 +209,15 @@ public class LocationDataController {
         for(int i=0; i<dto.getNoOfData(); i++){
             //set random deck as start if no specific deck has been set
             Integer deckNo = dto.getDeck() == null? random.ints(5, 10).findFirst().getAsInt() : dto.getDeck();
-
-            grid = decks.get(deckNo);
+            Integer finalDeckNo = deckNo == 5 || deckNo == 6? 7 : deckNo;
+            grid = decks.get(finalDeckNo);
 
             dto.setSpeed(locationDataUtils.getRandomSpeed());
             AtomicReference<Pair<Integer, Integer>> startLocation = new AtomicReference<>(locationDataUtils.generateRandomStartPoint(grid));
             AtomicReference<Boolean> isAfterFirst = new AtomicReference<>(false);
 
             String[][] finalGrid = grid;
-            Integer finalDeckNo = deckNo == 5 || deckNo == 6? 7 : deckNo;
+
             new Thread(() -> {
                 Pair<Integer, Integer> finalStartLocation = startLocation.get();
                 LocationDTO locationDto = new LocationDTO();
@@ -266,7 +266,7 @@ public class LocationDataController {
             Integer deckNo = dto.getDeck() == null? random.ints(5, 10).findFirst().getAsInt() : dto.getDeck();
 
             Integer finalDeckNo = deckNo == 5 || deckNo == 6? 7 : deckNo;
-            String[][] grid = decks.get(deckNo);
+            String[][] grid = decks.get(finalDeckNo);
             AtomicReference<Pair<Integer, Integer>> startLocation = new AtomicReference<>
                     (locationDataUtils.generateRandomStartPoint(grid));
             new Thread(() -> {
