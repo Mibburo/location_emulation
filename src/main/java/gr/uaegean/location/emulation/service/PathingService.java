@@ -185,7 +185,8 @@ public class PathingService {
 
     private void rerunPathfindingForNextDeck(Integer deckNo, EmulationDTO dto, String exitGf, LocationDTO locationDTO){
         //if running deck is not deck 7 then get the next deck and rerun pathing
-        if(deckNo != 7){
+        // switched to run only for deck 8 after changing deck simulation 'if(deckNo != 7)' for default use
+        if(deckNo == 8){
             deckNo--;
             String[][] deck = {};
             switch (deckNo){

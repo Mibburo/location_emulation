@@ -63,11 +63,12 @@ public class LocationDataUtils {
             { "#FFAF00", "geofence 12" },
             { "#D5B742", "S8-7.2" },
             { "#4BB5CB", "S8-7.2-exit, exit82" },
-            { "#FE52FE", "S9-8.2-exit, exit92" },
+            //{ "#FE52FE", "S9-8.2-exit, exit92" },
             { "#1F528F", "S8-7.2-entry, us92" },
             { "#858592", "S8-7.3" },
             { "#ED1C24", "S8-7.3-exit, exit83" },
-            { "#0F1D79", "S9-8.3-exit, exit93" },
+            //{ "#0F1D79", "S9-8.3-exit, exit93" },
+            { "#0F1D79", "9CG0, muster-station" },
             { "#361788", "S8-7.3-entry, us93" },
             { "#77E1DF", "8BG1" },
             { "#CE5397", "8BG2" },
@@ -81,15 +82,21 @@ public class LocationDataUtils {
             { "#FFAEC9", "8BG10" },
             { "#C8BFE7", "S8-7.1" },
             { "#66F7C0", "S8-7.1-exit-1, exit81" },
-            { "#867D3E", "S9-8.1-1, exit91-1" },
+            //{ "#867D3E", "S9-8.1-1, exit91-1" },
             { "#BB0B8F", "S8-7.1-entry-1, us91-1" },
-            { "#2D7B15", "S9-8.1-2, exit91-2" },
+            //{ "#2D7B15", "S9-8.1-2, exit91-2" },
+            { "#2D7B15", "9BG2" },
             { "#A94B23", "S8-7.1-entry-2, us91-2" },
             { "#FF6F17", "S8-7.1-exit-2, exit81-2" },
-            { "#A6FFB1", "S9-8.2" },
-            { "#AD1414", "9BG2" },
-            { "#E08752", "S9-8.3" },
-            { "#F0F858", "S9-8.1" },
+            //{ "#A6FFB1", "S9-8.2" },
+            { "#A6FFB1", "9BG3" },
+            //{ "#AD1414", "9BG2" },
+            { "#AD1414", "9BG4" },
+            { "#FE52FE", "GCab9217" },
+            //{ "#E08752", "S9-8.3" },
+            { "#E08752", "GCab9223" },
+            //{ "#F0F858", "S9-8.1" },
+            { "#F0F858", "9BG1+" },
             { "#6F0266", "9BG1" },
 
     }).collect(Collectors.toMap(data -> data[0], data -> data[1]));
@@ -99,10 +106,10 @@ public class LocationDataUtils {
             { "#4BB5CB", "#70DAB3" },
             { "#ED1C24", "#EA2B64" },
             { "#66F7C0", "#606F22" },
-            { "#0F1D79", "#361788" },
-            { "#FE52FE", "#1F528F" },
-            { "#867D3E", "#BB0B8F" },
-            { "#2D7B15", "#A94B23" },
+            //{ "#0F1D79", "#361788" },
+            //{ "#FE52FE", "#1F528F" },
+            //{ "#867D3E", "#BB0B8F" },
+            //{ "#2D7B15", "#A94B23" },
             { "#FF6F17", "#56A8C2" },
 
     }).collect(Collectors.toMap(data -> data[0], data -> data[1]));
@@ -119,7 +126,8 @@ public class LocationDataUtils {
     // exit geofences per deck number
     public static Map<Integer, List<String>> exitVal = Map.of(7, List.of("#00AFFF"),
             8, List.of("#4BB5CB", "#ED1C24","#66F7C0","#FF6F17"),
-            9, List.of("#FE52FE", "#0F1D79", "#867D3E", "#2D7B15") );
+            //9, List.of("#FE52FE", "#0F1D79", "#867D3E", "#2D7B15") );
+            9, List.of("#0F1D79") );
 
     public static LocationTO generateLocationAddress() throws NoSuchAlgorithmException, InvalidKeyException {
         LocationTO cl = new LocationTO();
